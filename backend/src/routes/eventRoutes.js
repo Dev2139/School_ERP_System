@@ -1,0 +1,10 @@
+const express = require('express');
+const router = express.Router();
+const eventController = require('../controllers/eventController');
+const { authenticateUser, authorizeRoles } = require('../middleware/authMiddleware');
+
+router.use(authenticateUser);
+router.get('/', eventController.getEvents);
+router.post('/', authorizeRoles('admin'), eventController.createEvent);
+
+module.exports = router;
