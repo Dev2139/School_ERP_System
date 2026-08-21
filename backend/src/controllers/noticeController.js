@@ -29,3 +29,14 @@ exports.createNotice = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.deleteNotice = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await Notice.findOneAndDelete({ _id: id, schoolId: req.user.schoolId });
+    await logAudit(req, 'NOTICE_DELETED', 'Notice', id);
+    res.status(200).json({ success: true, message: 'Notice deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -5,6 +5,7 @@ const noticeSchema = new mongoose.Schema(
     schoolId: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: true, index: true },
     title: { type: String, required: true, trim: true },
     content: { type: String, required: true },
+    imageUrl: { type: String, default: '' },
     targetAudience: {
       type: String,
       enum: ['everyone', 'teachers', 'students', 'parents', 'class'],

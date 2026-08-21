@@ -23,6 +23,7 @@ const transportRoutes = require('./routes/transportRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const searchRoutes = require('./routes/searchRoutes');
 const settingRoutes = require('./routes/settingRoutes');
+const studyMaterialRoutes = require('./routes/studyMaterialRoutes');
 
 const staffRoutes = require('./routes/staffRoutes');
 
@@ -52,6 +53,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/timetable', timetableRoutes);
 app.use('/api/exams', examRoutes);
 app.use('/api/homework', homeworkRoutes);
+app.use('/api/study-materials', studyMaterialRoutes);
 app.use('/api/fees', feeRoutes);
 app.use('/api/admissions', admissionRoutes);
 app.use('/api/notices', noticeRoutes);

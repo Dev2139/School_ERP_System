@@ -5,6 +5,7 @@ const { authenticateUser, authorizeRoles } = require('../middleware/authMiddlewa
 
 router.use(authenticateUser);
 router.get('/', noticeController.getNotices);
-router.post('/', authorizeRoles('admin', 'teacher'), noticeController.createNotice);
+router.post('/', authorizeRoles('admin'), noticeController.createNotice);
+router.delete('/:id', authorizeRoles('admin'), noticeController.deleteNotice);
 
 module.exports = router;

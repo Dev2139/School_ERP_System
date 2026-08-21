@@ -13,6 +13,7 @@ import AttendanceManager from './pages/AttendanceManager';
 import TimetableManager from './pages/TimetableManager';
 import ExamManager from './pages/ExamManager';
 import HomeworkManager from './pages/HomeworkManager';
+import StudyMaterialManager from './pages/StudyMaterialManager';
 import FeeManager from './pages/FeeManager';
 import AdmissionManager from './pages/AdmissionManager';
 import NoticeManager from './pages/NoticeManager';
@@ -78,6 +79,7 @@ export default function App() {
         <Route path="timetable" element={<TimetableManager />} />
         <Route path="exams" element={<ExamManager />} />
         <Route path="homework" element={<HomeworkManager />} />
+        <Route path="study-materials" element={<StudyMaterialManager />} />
         <Route path="fees" element={<FeeManager />} />
         
         <Route
@@ -91,8 +93,6 @@ export default function App() {
         <Route path="notices" element={<NoticeManager />} />
         <Route path="calendar" element={<CalendarView />} />
         <Route path="leave" element={<LeaveManager />} />
-        <Route path="library" element={<LibraryManager />} />
-        <Route path="transport" element={<TransportManager />} />
         
         <Route
           path="reports"

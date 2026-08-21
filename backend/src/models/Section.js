@@ -7,6 +7,7 @@ const sectionSchema = new mongoose.Schema(
     name: { type: String, required: true }, // e.g. "Section A"
     roomNo: { type: String, default: '101' },
     capacity: { type: Number, default: 40 },
+    classTeacher: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher' },
   },
   { timestamps: true }
 );
