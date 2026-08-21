@@ -27,6 +27,7 @@ import {
 export default function StudyMaterialManager() {
   const { user } = useAuth();
   const { addToast } = useNotification();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const isPrincipal = user?.role === 'admin';
   const isTeacher = user?.role === 'teacher';
@@ -38,8 +39,8 @@ export default function StudyMaterialManager() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // Active view states
-  const [selectedFolder, setSelectedFolder] = useState(null);
+  // Active view states with URL persistence
+  const folderIdParam = searchParams.get('folderId');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClassFilter, setSelectedClassFilter] = useState('');
 
@@ -133,6 +134,16 @@ export default function StudyMaterialManager() {
   });
 
   const foldersList = Object.values(folderMap);
+
+  const selectedFolder = folderIdParam ? foldersList.find((f) => f.id === folderIdParam) : null;
+
+  const setSelectedFolder = (folder) => {
+    if (!folder) {
+      setSearchParams({});
+    } else {
+      setSearchParams({ folderId: folder.id });
+    }
+  };
 
   // File Change Handler with STRICT PDF Validation
   const handleFileChange = (e) => {

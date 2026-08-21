@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import {
@@ -25,12 +26,29 @@ export default function AcademicList() {
   const [loading, setLoading] = useState(true);
   const { addToast } = useNotification();
 
-  // Navigation Drilldown state:
-  // selectedClassId: null -> Level 1 (All Classes Grid)
-  // selectedClassId: '...' & selectedSectionId: null -> Level 2 (Class Sections Grid)
-  // selectedClassId: '...' & selectedSectionId: '...' -> Level 3 (Section Details: Class Teacher & Subjects)
-  const [selectedClassId, setSelectedClassId] = useState(null);
-  const [selectedSectionId, setSelectedSectionId] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedClassId = searchParams.get('classId');
+  const selectedSectionId = searchParams.get('sectionId');
+
+  const setSelectedClassId = (classId) => {
+    if (!classId) {
+      setSearchParams({});
+    } else {
+      setSearchParams({ classId });
+    }
+  };
+
+  const setSelectedSectionId = (sectionId) => {
+    if (!sectionId) {
+      if (selectedClassId) {
+        setSearchParams({ classId: selectedClassId });
+      } else {
+        setSearchParams({});
+      }
+    } else {
+      setSearchParams({ classId: selectedClassId, sectionId });
+    }
+  };
 
   // Modals state
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);
