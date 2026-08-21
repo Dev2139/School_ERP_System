@@ -79,7 +79,14 @@ export default function App() {
         <Route path="timetable" element={<TimetableManager />} />
         <Route path="exams" element={<ExamManager />} />
         <Route path="homework" element={<HomeworkManager />} />
-        <Route path="study-materials" element={<StudyMaterialManager />} />
+        <Route
+          path="study-materials"
+          element={
+            <RoleRoute roles={['teacher', 'student']}>
+              <StudyMaterialManager />
+            </RoleRoute>
+          }
+        />
         <Route path="fees" element={<FeeManager />} />
         
         <Route

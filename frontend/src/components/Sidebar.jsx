@@ -45,7 +45,7 @@ export default function Sidebar() {
     { label: role === 'student' ? 'My Class Timetable' : 'Timetable', path: '/timetable', icon: Clock, roles: ['admin', 'teacher', 'student'] },
     { label: role === 'student' ? 'My Results & Grades' : 'Exams & Results', path: '/exams', icon: Award, roles: ['admin', 'teacher', 'student'] },
     { label: role === 'student' ? 'My Homework Tasks' : 'Homework', path: '/homework', icon: FileSpreadsheet, roles: ['admin', 'teacher', 'student'] },
-    { label: role === 'student' ? 'My Study Materials' : 'Study Material', path: '/study-materials', icon: BookOpen, roles: ['admin', 'teacher', 'student'] },
+    { label: role === 'student' ? 'My Study Materials' : 'Study Material', path: '/study-materials', icon: BookOpen, roles: ['teacher', 'student'] },
     { label: role === 'student' ? 'My Fee Balance' : 'Fee Management', path: '/fees', icon: DollarSign, roles: ['admin', 'student'] },
     
     { label: 'Admissions Pipeline', path: '/admissions', icon: UserPlus, roles: ['admin'] },

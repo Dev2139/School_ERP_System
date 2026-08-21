@@ -1,25 +1,45 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import StudentIdCardModal from '../components/StudentIdCardModal';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { Eye, CreditCard, ArrowUpRight } from 'lucide-react';
+import {
+  Eye,
+  CreditCard,
+  UserPlus,
+  Users,
+  School,
+  Layers,
+  Filter,
+  CheckCircle,
+  UserCheck,
+  Sparkles,
+} from 'lucide-react';
 
 export default function StudentList() {
   const { user } = useAuth();
+  const { addToast } = useNotification();
+  const navigate = useNavigate();
+
+  // Active View Tab: 'general' (All Students) | 'classwise' (Class-Wise Directory)
+  const [activeTab, setActiveTab] = useState('general');
+
+  // Class-Wise Directory Filters
+  const [selectedClassId, setSelectedClassId] = useState('');
+  const [selectedSectionId, setSelectedSectionId] = useState('');
+
+  // Data States
   const [students, setStudents] = useState([]);
+  const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedStudentForCard, setSelectedStudentForCard] = useState(null);
-
-  const { addToast } = useNotification();
-  const navigate = useNavigate();
 
   if (user?.role === 'student' && user?.profileId) {
     const pid = user.profileId._id || user.profileId;
@@ -47,12 +67,13 @@ export default function StudentList() {
     academicYearId: '',
   });
 
-  const [classes, setClasses] = useState([]);
+  useEffect(() => {
+    fetchClasses();
+  }, []);
 
   useEffect(() => {
     fetchStudents();
-    fetchClasses();
-  }, [page, search]);
+  }, [page, search, selectedClassId, selectedSectionId, activeTab]);
 
   const fetchClasses = async () => {
     try {
@@ -78,9 +99,17 @@ export default function StudentList() {
     setLoading(true);
     try {
       let url = `/students?page=${page}&limit=10`;
+
+      // If in classwise view or filter set
+      if (activeTab === 'classwise') {
+        if (selectedClassId) url += `&classId=${selectedClassId}`;
+        if (selectedSectionId) url += `&sectionId=${selectedSectionId}`;
+      }
+
       if (search && search.trim()) {
         url += `&search=${encodeURIComponent(search.trim())}`;
       }
+
       const res = await api.get(url);
       if (res.data.success) {
         setStudents(res.data.data);
@@ -98,7 +127,10 @@ export default function StudentList() {
     try {
       const res = await api.post('/students', formData);
       if (res.data.success) {
-        addToast(`Student & User account created! Login: ${formData.email} (Initial Pass: DOB DDMMYYYY)`, 'success');
+        addToast(
+          `Student & User account created! Login: ${formData.email} (Initial Pass: DOB DDMMYYYY)`,
+          'success'
+        );
         setIsAddModalOpen(false);
         fetchStudents();
       }
@@ -107,17 +139,27 @@ export default function StudentList() {
     }
   };
 
+  const activeClassObj = classes.find((c) => c._id === selectedClassId);
+  const activeSectionObj = activeClassObj?.sections?.find((s) => s._id === selectedSectionId);
+
   const columns = [
     {
-      header: 'Student',
+      header: 'Student Profile',
       render: (row) => (
         <div className="flex items-center gap-3">
-          <img src={row.profilePhoto} alt={row.firstName} className="w-9 h-9 rounded-full object-cover border border-slate-200" />
+          <img
+            src={row.profilePhoto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${row.firstName}`}
+            alt={row.firstName}
+            className="w-9 h-9 rounded-full object-cover border border-slate-200"
+          />
           <div>
-            <div className="font-semibold text-slate-800 hover:text-indigo-600 cursor-pointer" onClick={() => navigate(`/students/${row._id}`)}>
+            <div
+              className="font-bold text-slate-900 hover:text-indigo-600 cursor-pointer transition-colors"
+              onClick={() => navigate(`/students/${row._id}`)}
+            >
               {row.firstName} {row.lastName}
             </div>
-            <div className="text-[11px] text-slate-400">Adm: {row.admissionNumber}</div>
+            <div className="text-[11px] text-slate-400 font-mono">Adm: {row.admissionNumber}</div>
           </div>
         </div>
       ),
@@ -126,7 +168,7 @@ export default function StudentList() {
       header: 'ID / Roll',
       render: (row) => (
         <div>
-          <div className="font-semibold text-slate-700">{row.studentId}</div>
+          <div className="font-bold text-slate-700 font-mono">{row.studentId}</div>
           <div className="text-xs text-slate-400">Roll: {row.rollNumber}</div>
         </div>
       ),
@@ -134,8 +176,8 @@ export default function StudentList() {
     {
       header: 'Class & Section',
       render: (row) => (
-        <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-semibold border border-indigo-100">
-          {row.classId?.name || 'Class 7'} - {row.sectionId?.name || 'Sec A'}
+        <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-100">
+          {row.classId?.name || 'Class'} - {row.sectionId?.name || 'Sec A'}
         </span>
       ),
     },
@@ -143,7 +185,7 @@ export default function StudentList() {
       header: 'Parent Contact',
       render: (row) => (
         <div className="text-xs text-slate-600">
-          <p className="font-medium text-slate-800">{row.parentId?.name || 'Parent Guard'}</p>
+          <p className="font-bold text-slate-800">{row.parentId?.name || 'Guardian'}</p>
           <p className="text-slate-400">{row.emergencyContact}</p>
         </div>
       ),
@@ -151,7 +193,11 @@ export default function StudentList() {
     {
       header: 'Status',
       render: (row) => (
-        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${row.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+        <span
+          className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+            row.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+          }`}
+        >
           {row.status}
         </span>
       ),
@@ -162,17 +208,17 @@ export default function StudentList() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => navigate(`/students/${row._id}`)}
-            className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-semibold flex items-center gap-1 transition-all"
+            className="p-1.5 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
             title="View Full Profile"
           >
-            <Eye className="w-3.5 h-3.5" />
+            <Eye className="w-4 h-4" />
           </button>
           <button
             onClick={() => setSelectedStudentForCard(row)}
-            className="p-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 text-xs font-semibold flex items-center gap-1 transition-all"
+            className="p-1.5 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-100 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
             title="Print ID Card"
           >
-            <CreditCard className="w-3.5 h-3.5" />
+            <CreditCard className="w-4 h-4" />
           </button>
         </div>
       ),
@@ -181,12 +227,157 @@ export default function StudentList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Student Management</h1>
-          <p className="text-sm text-slate-500">Manage student profiles, enrollments, and documents</p>
+      {/* Top Banner & View Switcher */}
+      <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl border border-indigo-100 shadow-xs">
+              <Users className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Student Directory</h1>
+              <p className="text-xs text-slate-500 font-medium">
+                Manage student enrollments, general rosters, and class-wise student lists
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Register New Student</span>
+          </button>
+        </div>
+
+        {/* VIEW TAB SWITCHER */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
+            <button
+              onClick={() => {
+                setActiveTab('general');
+                setSelectedClassId('');
+                setSelectedSectionId('');
+                setPage(1);
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                activeTab === 'general'
+                  ? 'bg-white text-indigo-600 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>General Student Roster</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab('classwise');
+                if (classes.length > 0) {
+                  setSelectedClassId(classes[0]._id);
+                }
+                setPage(1);
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                activeTab === 'classwise'
+                  ? 'bg-white text-indigo-600 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <School className="w-4 h-4" />
+              <span>Class-Wise Directory</span>
+            </button>
+          </div>
+
+          <div className="text-xs font-bold text-slate-400">
+            Total Students: <span className="text-slate-900 font-black">{total}</span>
+          </div>
         </div>
       </div>
+
+      {/* CLASS-WISE FILTER BAR (WHEN IN CLASSWISE TAB) */}
+      {activeTab === 'classwise' && (
+        <div className="bg-slate-900 text-white rounded-3xl p-6 shadow-md space-y-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+            <div>
+              <div className="text-[10px] font-black uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                <Filter className="w-3.5 h-3.5" /> Class & Section Filter
+              </div>
+              <h2 className="text-lg font-black mt-0.5">
+                {activeClassObj ? activeClassObj.name : 'Select Class'}{' '}
+                {activeSectionObj ? `- ${activeSectionObj.name}` : ''}
+              </h2>
+            </div>
+
+            {/* CLASS SELECTOR TABS */}
+            <div className="flex flex-wrap items-center gap-2">
+              {classes.map((cls) => (
+                <button
+                  key={cls._id}
+                  onClick={() => {
+                    setSelectedClassId(cls._id);
+                    setSelectedSectionId('');
+                    setPage(1);
+                  }}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    selectedClassId === cls._id
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  {cls.name} ({cls.code})
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* SECTION SELECTOR & CLASS SUMMARY */}
+          {activeClassObj && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sections:</span>
+                <button
+                  onClick={() => {
+                    setSelectedSectionId('');
+                    setPage(1);
+                  }}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    !selectedSectionId
+                      ? 'bg-white text-slate-900'
+                      : 'bg-slate-800 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  All Sections
+                </button>
+                {activeClassObj.sections?.map((sec) => (
+                  <button
+                    key={sec._id}
+                    onClick={() => {
+                      setSelectedSectionId(sec._id);
+                      setPage(1);
+                    }}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      selectedSectionId === sec._id
+                        ? 'bg-white text-slate-900'
+                        : 'bg-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {sec.name} ({sec.roomNo})
+                  </button>
+                ))}
+              </div>
+
+              {activeSectionObj?.classTeacher && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-indigo-950/80 border border-indigo-500/30 rounded-xl text-xs text-indigo-200">
+                  <UserCheck className="w-4 h-4 text-indigo-400" />
+                  <span>Class Teacher: <strong className="text-white">{activeSectionObj.classTeacher.name}</strong></span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Main Table */}
       <DataTable
@@ -274,8 +465,11 @@ export default function StudentList() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Class</label>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+                Class <span className="text-rose-500">*</span>
+              </label>
               <select
+                required
                 value={formData.classId}
                 onChange={(e) => {
                   const selClass = classes.find((c) => c._id === e.target.value);
@@ -285,8 +479,9 @@ export default function StudentList() {
                     sectionId: selClass?.sections?.[0]?._id || '',
                   });
                 }}
-                className="w-full px-3 py-2 border rounded-xl text-sm bg-white"
+                className="w-full px-3 py-2 border rounded-xl text-sm bg-white font-semibold focus:ring-2 focus:ring-indigo-500"
               >
+                <option value="">Select Class *</option>
                 {classes.map((c) => (
                   <option key={c._id} value={c._id}>
                     {c.name}
@@ -295,17 +490,21 @@ export default function StudentList() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Section</label>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+                Section <span className="text-rose-500">*</span>
+              </label>
               <select
+                required
                 value={formData.sectionId}
                 onChange={(e) => setFormData({ ...formData, sectionId: e.target.value })}
-                className="w-full px-3 py-2 border rounded-xl text-sm bg-white"
+                className="w-full px-3 py-2 border rounded-xl text-sm bg-white font-semibold focus:ring-2 focus:ring-indigo-500"
               >
+                <option value="">Select Section *</option>
                 {classes
                   .find((c) => c._id === formData.classId)
                   ?.sections?.map((s) => (
                     <option key={s._id} value={s._id}>
-                      {s.name}
+                      {s.name} ({s.roomNo})
                     </option>
                   ))}
               </select>
@@ -313,10 +512,17 @@ export default function StudentList() {
           </div>
 
           <div className="pt-2 flex justify-end gap-2">
-            <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setIsAddModalOpen(false)}
+              className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 rounded-xl"
+            >
               Cancel
             </button>
-            <button type="submit" className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-xl shadow-md">
+            <button
+              type="submit"
+              className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-xl shadow-md"
+            >
               Save Student
             </button>
           </div>

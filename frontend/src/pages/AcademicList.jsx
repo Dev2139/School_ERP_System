@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import {
@@ -17,6 +17,9 @@ import {
   Sparkles,
   Edit3,
   ShieldCheck,
+  Users,
+  UserPlus,
+  Eye,
 } from 'lucide-react';
 import Modal from '../components/Modal';
 
@@ -25,6 +28,7 @@ export default function AcademicList() {
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const { addToast } = useNotification();
+  const navigate = useNavigate();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedClassId = searchParams.get('classId');
@@ -54,6 +58,7 @@ export default function AcademicList() {
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);
   const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
+  const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
 
   // Form states
   const [newClassName, setNewClassName] = useState('');
@@ -67,11 +72,28 @@ export default function AcademicList() {
   const [subjectCode, setSubjectCode] = useState('');
   const [subjectTeacherId, setSubjectTeacherId] = useState('');
 
+  // Section Students State
+  const [sectionStudents, setSectionStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [studentForm, setStudentForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    rollNumber: 1,
+    emergencyContact: '+1 555-0199',
+  });
+
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (selectedClassId && selectedSectionId) {
+      fetchSectionStudents(selectedClassId, selectedSectionId);
+    }
+  }, [selectedClassId, selectedSectionId]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -90,6 +112,20 @@ export default function AcademicList() {
       addToast('Failed to load academic setup data', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSectionStudents = async (cId, sId) => {
+    setLoadingStudents(true);
+    try {
+      const res = await api.get(`/students?classId=${cId}&sectionId=${sId}&limit=100`);
+      if (res.data.success) {
+        setSectionStudents(res.data.data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingStudents(false);
     }
   };
 
@@ -277,6 +313,41 @@ export default function AcademicList() {
     }
   };
 
+  // Register Student into Active Section Handler
+  const handleCreateStudentForSection = async (e) => {
+    e.preventDefault();
+    if (!selectedClass || !selectedSection) return;
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        ...studentForm,
+        admissionNumber: `ADM-${Date.now().toString().slice(-4)}`,
+        studentId: `STU-${Math.floor(1000 + Math.random() * 9000)}`,
+        classId: selectedClass._id,
+        sectionId: selectedSection._id,
+        academicYearId: selectedClass.academicYearId || '60d0fe4f5311236168a109ca',
+      };
+      const res = await api.post('/students', payload);
+      if (res.data.success) {
+        addToast(`Student ${studentForm.firstName} enrolled in ${selectedSection.name}!`, 'success');
+        setIsStudentModalOpen(false);
+        setStudentForm({
+          firstName: '',
+          lastName: '',
+          email: '',
+          rollNumber: (sectionStudents.length || 0) + 1,
+          emergencyContact: '+1 555-0199',
+        });
+        fetchSectionStudents(selectedClass._id, selectedSection._id);
+      }
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to enroll student', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Breadcrumbs & Action Header */}
@@ -289,7 +360,7 @@ export default function AcademicList() {
             <div>
               <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Academic Structure Setup</h1>
               <p className="text-xs text-slate-500 font-medium">
-                Organize Classes → Sections → Class Teachers → Curriculum Subjects
+                Organize Classes → Sections → Class Teachers → Enrolled Students & Curriculum Subjects
               </p>
             </div>
           </div>
@@ -312,13 +383,29 @@ export default function AcademicList() {
               <span>Add Section to {selectedClass.name}</span>
             </button>
           ) : (
-            <button
-              onClick={handleOpenSubjectModal}
-              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Subject to {selectedSection.name}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setStudentForm((prev) => ({
+                    ...prev,
+                    rollNumber: (sectionStudents.length || 0) + 1,
+                  }));
+                  setIsStudentModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Add Student to {selectedSection.name}</span>
+              </button>
+
+              <button
+                onClick={handleOpenSubjectModal}
+                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Subject</span>
+              </button>
+            </div>
           )}
         </div>
 
@@ -368,7 +455,7 @@ export default function AcademicList() {
         /* LEVEL 1: ALL CLASSES GRID */
         <div className="space-y-4">
           <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Select a Class to manage its Sections, Class Teachers, and Subjects ({classes.length} Active Classes)
+            Select a Class to manage its Sections, Class Teachers, Enrolled Students, and Subjects ({classes.length} Active Classes)
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -519,7 +606,7 @@ export default function AcademicList() {
                     </div>
 
                     <div className="pt-2 flex items-center justify-between text-xs font-bold text-indigo-600">
-                      <span>Open Section & Subjects</span>
+                      <span>Open Section, Roster & Subjects</span>
                       <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
@@ -529,7 +616,7 @@ export default function AcademicList() {
           </div>
         </div>
       ) : (
-        /* LEVEL 3: INSIDE SECTION - CLASS TEACHER & SUBJECTS DETAILS */
+        /* LEVEL 3: INSIDE SECTION - CLASS TEACHER, ENROLLED STUDENTS & SUBJECTS DETAILS */
         <div className="space-y-6">
           {/* Section Header Card */}
           <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-slate-900 text-white rounded-3xl p-6 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -547,7 +634,7 @@ export default function AcademicList() {
                 </div>
                 <h2 className="text-2xl font-black">{selectedSection.name}</h2>
                 <div className="text-xs text-slate-300 font-medium mt-0.5">
-                  Location: {selectedSection.roomNo} • Capacity: {selectedSection.capacity || 40} Students
+                  Location: {selectedSection.roomNo} • Enrolled Students: {sectionStudents.length} Students
                 </div>
               </div>
             </div>
@@ -572,8 +659,111 @@ export default function AcademicList() {
             </div>
           </div>
 
-          {/* CURRICULUM SUBJECTS SECTION */}
+          {/* ENROLLED STUDENTS IN SECTION */}
           <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-5 rounded-3xl border border-slate-200 shadow-xs">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-indigo-600" />
+                  <h3 className="text-base font-black text-slate-900">
+                    Enrolled Students in {selectedSection.name} ({sectionStudents.length})
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Students currently assigned to {selectedClass.name} - {selectedSection.name}
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setStudentForm((prev) => ({
+                    ...prev,
+                    rollNumber: (sectionStudents.length || 0) + 1,
+                  }));
+                  setIsStudentModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Add Student to {selectedSection.name}</span>
+              </button>
+            </div>
+
+            {loadingStudents ? (
+              <div className="bg-white rounded-3xl border p-8 text-center text-slate-400 font-bold text-xs">
+                Loading section roster...
+              </div>
+            ) : sectionStudents.length === 0 ? (
+              <div className="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-3">
+                <Users className="w-10 h-10 text-slate-300 mx-auto" />
+                <div className="font-extrabold text-slate-700 text-sm">No Students Enrolled in {selectedSection.name}</div>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  Click "+ Add Student" to register students directly into {selectedClass.name} - {selectedSection.name}.
+                </p>
+                <button
+                  onClick={() => setIsStudentModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-bold rounded-xl text-xs"
+                >
+                  <UserPlus className="w-4 h-4" /> Add First Student
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    <tr>
+                      <th className="py-3 px-4">Student</th>
+                      <th className="py-3 px-4">ID / Roll</th>
+                      <th className="py-3 px-4">Class & Section</th>
+                      <th className="py-3 px-4">Emergency Contact</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                    {sectionStudents.map((s) => (
+                      <tr key={s._id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-3 px-4 flex items-center gap-3">
+                          <img
+                            src={s.profilePhoto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${s.firstName}`}
+                            alt={s.firstName}
+                            className="w-8 h-8 rounded-full border border-slate-200 object-cover"
+                          />
+                          <div>
+                            <div className="font-black text-slate-900 hover:text-indigo-600 cursor-pointer" onClick={() => navigate(`/students/${s._id}`)}>
+                              {s.firstName} {s.lastName}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono">Adm: {s.admissionNumber}</div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="font-mono font-bold text-slate-800">{s.studentId}</div>
+                          <div className="text-[10px] text-slate-400">Roll #{s.rollNumber}</div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] font-bold border border-indigo-100">
+                            {selectedClass.name} - {selectedSection.name}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-500">{s.emergencyContact}</td>
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            onClick={() => navigate(`/students/${s._id}`)}
+                            className="p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                            title="View Full Profile"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* CURRICULUM SUBJECTS SECTION */}
+          <div className="space-y-4 pt-4 border-t border-slate-200">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-5 rounded-3xl border border-slate-200 shadow-xs">
               <div>
                 <div className="flex items-center gap-2">
@@ -676,6 +866,94 @@ export default function AcademicList() {
             )}
           </div>
         </div>
+      )}
+
+      {/* ENROLL STUDENT IN SECTION MODAL */}
+      {isStudentModalOpen && selectedClass && selectedSection && (
+        <Modal
+          isOpen={isStudentModalOpen}
+          onClose={() => setIsStudentModalOpen(false)}
+          title={`Add Student to ${selectedClass.name} - ${selectedSection.name}`}
+        >
+          <form onSubmit={handleCreateStudentForSection} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">First Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. John"
+                  value={studentForm.firstName}
+                  onChange={(e) => setStudentForm({ ...studentForm, firstName: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Last Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Doe"
+                  value={studentForm.lastName}
+                  onChange={(e) => setStudentForm({ ...studentForm, lastName: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Student Email (Login ID) *</label>
+              <input
+                type="email"
+                required
+                placeholder="e.g. student@school.com"
+                value={studentForm.email}
+                onChange={(e) => setStudentForm({ ...studentForm, email: e.target.value })}
+                className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Target Class & Section</label>
+                <input
+                  type="text"
+                  disabled
+                  value={`${selectedClass.name} - ${selectedSection.name}`}
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-bold bg-slate-100 text-slate-600 cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Roll Number *</label>
+                <input
+                  type="number"
+                  required
+                  value={studentForm.rollNumber}
+                  onChange={(e) => setStudentForm({ ...studentForm, rollNumber: Number(e.target.value) })}
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <button
+                type="button"
+                onClick={() => setIsStudentModalOpen(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md shadow-emerald-600/20 transition-all disabled:opacity-50"
+              >
+                {submitting ? 'Enrolling Student...' : 'Enroll Student'}
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
 
       {/* CREATE NEW CLASS MODAL */}
