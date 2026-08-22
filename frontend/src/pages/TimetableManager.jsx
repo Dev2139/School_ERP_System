@@ -223,8 +223,11 @@ export default function TimetableManager() {
       return subMatch || qualMatch;
     });
 
+    const activeClassObj = classes.find((c) => c._id === selectedClass);
+    const activeSectionObj = activeClassObj?.sections?.find((s) => s._id === selectedSection);
+    const sectionRoom = activeSectionObj?.roomNo || existingSlot?.classroom || (activeSectionObj?.name ? `Room for ${activeSectionObj.name}` : 'Room 101');
+
     const initialTeacherId = existingSlot?.teacherId?._id || existingSlot?.teacherId || (qualified.length > 0 ? qualified[0]._id : '');
-    const initialClassroom = existingSlot?.classroom || 'Room 101';
 
     setSlotForm({
       day: dayName,
@@ -234,29 +237,28 @@ export default function TimetableManager() {
       endTime: periodObj.endTime || '10:15 AM',
       subjectId: defaultSubjId,
       teacherId: initialTeacherId,
-      classroom: initialClassroom,
+      classroom: sectionRoom,
     });
     setConflictWarning(null);
     setIsEditModalOpen(true);
 
-    checkSlotConflict(initialTeacherId, initialClassroom, dayName, periodObj.period);
+    checkSlotConflict(initialTeacherId, dayName, periodObj.period);
   };
 
-  // Real-time Teacher & Room Conflict Checker
-  const checkSlotConflict = async (teacherId, classroom, day, periodNumber) => {
-    if ((!teacherId && !classroom) || !day || !periodNumber) {
+  // Real-time Teacher Conflict Checker
+  const checkSlotConflict = async (teacherId, day, periodNumber) => {
+    if (!teacherId || !day || !periodNumber) {
       setConflictWarning(null);
       return;
     }
     try {
       const res = await api.get(
-        `/timetable/check-conflict?teacherId=${teacherId || ''}&classroom=${encodeURIComponent(classroom || '')}&day=${day}&periodNumber=${periodNumber}&classId=${selectedClass}&sectionId=${selectedSection}`
+        `/timetable/check-conflict?teacherId=${teacherId}&day=${day}&periodNumber=${periodNumber}&classId=${selectedClass}&sectionId=${selectedSection}`
       );
       if (res.data.success && res.data.hasConflict) {
         setConflictWarning({
           message: res.data.message,
           teacherConflict: res.data.teacherConflict,
-          roomConflict: res.data.roomConflict,
           conflicts: res.data.conflicts || [],
         });
       } else {
@@ -289,12 +291,12 @@ export default function TimetableManager() {
       teacherId: nextTeacherId,
     }));
 
-    checkSlotConflict(nextTeacherId, slotForm.classroom, slotForm.day, slotForm.periodNumber);
+    checkSlotConflict(nextTeacherId, slotForm.day, slotForm.periodNumber);
   };
 
   const handleTeacherChange = (newTeacherId) => {
     setSlotForm((prev) => ({ ...prev, teacherId: newTeacherId }));
-    checkSlotConflict(newTeacherId, slotForm.classroom, slotForm.day, slotForm.periodNumber);
+    checkSlotConflict(newTeacherId, slotForm.day, slotForm.periodNumber);
   };
 
   const handleClassroomChange = (newClassroom) => {
@@ -681,15 +683,13 @@ export default function TimetableManager() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Classroom / Lab Location</label>
-              <input
-                type="text"
-                required
-                value={slotForm.classroom}
-                onChange={(e) => handleClassroomChange(e.target.value)}
-                placeholder="e.g. Room 101 or Computer Lab 3"
-                className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
-              />
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Classroom Location (Academic Setup)</label>
+              <div className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 flex items-center justify-between">
+                <span>{slotForm.classroom || selectedSectionObj?.roomNo || 'Room 101'}</span>
+                <span className="text-[10px] uppercase font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
+                  Auto-Assigned Homeroom
+                </span>
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t">

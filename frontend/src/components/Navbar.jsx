@@ -10,8 +10,8 @@ export default function Navbar({ onOpenSearch, onToggleMobileSidebar }) {
   const [selectedChildIndex, setSelectedChildIndex] = useState(0);
 
   const demoRoles = [
-    { label: 'Principal', role: 'admin', email: 'principal@school.com', pass: '06102006', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-200' },
-    { label: 'Teacher', role: 'teacher', email: 'manu@gmail.com', pass: '06102006', color: 'bg-sky-500/10 text-sky-600 border-sky-200' },
+    { label: 'Staff (Principal)', role: 'admin', email: 'principal@school.com', pass: '06102006', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-200' },
+    { label: 'Staff (Teacher)', role: 'teacher', email: 'manu@gmail.com', pass: '06102006', color: 'bg-sky-500/10 text-sky-600 border-sky-200' },
     { label: 'Student', role: 'student', email: 'student@school.com', pass: '06102006', color: 'bg-purple-500/10 text-purple-600 border-purple-200' },
   ];
 

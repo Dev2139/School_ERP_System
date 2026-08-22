@@ -72,7 +72,39 @@ exports.getClasses = async (req, res, next) => {
 
 exports.createClass = async (req, res, next) => {
   try {
-    const newClass = await Class.create({ ...req.body, schoolId: req.user.schoolId });
+    let academicYearId = req.body.academicYearId;
+    if (!academicYearId) {
+      let ay = await AcademicYear.findOne({ schoolId: req.user.schoolId, isCurrent: true })
+        || await AcademicYear.findOne({ schoolId: req.user.schoolId });
+
+      if (!ay) {
+        ay = await AcademicYear.create({
+          schoolId: req.user.schoolId,
+          name: '2026-2027',
+          startDate: new Date('2026-04-01'),
+          endDate: new Date('2027-03-31'),
+          isCurrent: true,
+        });
+      }
+      academicYearId = ay._id;
+    }
+
+    const newClass = await Class.create({
+      ...req.body,
+      schoolId: req.user.schoolId,
+      academicYearId,
+    });
+
+    // Auto-create initial Section A for the new class
+    await Section.create({
+      schoolId: req.user.schoolId,
+      classId: newClass._id,
+      name: 'Section A',
+      capacity: 40,
+      roomNo: 'Room 101',
+    });
+
+    await logAudit(req, 'CLASS_CREATED', 'Class', newClass._id.toString(), { name: newClass.name });
     res.status(201).json({ success: true, data: newClass });
   } catch (error) {
     next(error);

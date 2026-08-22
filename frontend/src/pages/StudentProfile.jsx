@@ -28,7 +28,8 @@ export default function StudentProfile() {
 
   const fetchStudentDetail = async () => {
     try {
-      const res = await api.get(`/students/${id}`);
+      const targetId = (id && id !== 'section' && id !== 'profile') ? id : (user?.profileId?._id || user?.profileId || 'profile');
+      const res = await api.get(`/students/${targetId}`);
       if (res.data.success) {
         setData(res.data.data);
       }

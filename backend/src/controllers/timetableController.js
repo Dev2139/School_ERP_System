@@ -120,7 +120,7 @@ exports.saveTimetable = async (req, res, next) => {
       }
     }
 
-    // Comprehensive Conflict Validation: Teacher Double-Booking & Room Occupation
+    // Comprehensive Conflict Validation: Teacher Double-Booking Check
     const allTimetables = await Timetable.find({
       schoolId,
       $or: [{ classId: { $ne: classId } }, { sectionId: { $ne: sectionId } }],
@@ -132,14 +132,14 @@ exports.saveTimetable = async (req, res, next) => {
     const conflicts = [];
 
     for (const slot of slots) {
-      const { day, periodNumber, teacherId, classroom } = slot;
+      const { day, periodNumber, teacherId } = slot;
 
       for (const otherTT of allTimetables) {
         const targetClassName = `${otherTT.classId?.name || 'Class'} - ${otherTT.sectionId?.name || 'Section'}`;
 
         for (const otherSlot of otherTT.slots) {
           if (otherSlot.day === day && Number(otherSlot.periodNumber) === Number(periodNumber)) {
-            // 1. Teacher Conflict Check
+            // Teacher Conflict Check: Ensure teacher is not double-booked
             if (teacherId && otherSlot.teacherId) {
               const otherTeacherIdStr = otherSlot.teacherId._id?.toString() || otherSlot.teacherId.toString();
               const teacherIdStr = teacherId._id?.toString() || teacherId.toString();
@@ -148,18 +148,6 @@ exports.saveTimetable = async (req, res, next) => {
                 const teacherName = otherSlot.teacherId.name || 'Teacher';
                 conflicts.push(
                   `Teacher Conflict: ${teacherName} is already teaching ${targetClassName} on ${day} Period ${periodNumber}`
-                );
-              }
-            }
-
-            // 2. Room Occupation Conflict Check
-            if (classroom && otherSlot.classroom) {
-              const currentRoom = classroom.trim().toLowerCase();
-              const otherRoom = otherSlot.classroom.trim().toLowerCase();
-
-              if (currentRoom === otherRoom && currentRoom !== 'unassigned') {
-                conflicts.push(
-                  `Room Conflict: ${classroom} is already occupied by ${targetClassName} on ${day} Period ${periodNumber}`
                 );
               }
             }
@@ -193,10 +181,10 @@ exports.saveTimetable = async (req, res, next) => {
 
 exports.checkConflict = async (req, res, next) => {
   try {
-    const { teacherId, classroom, day, periodNumber, classId, sectionId } = req.query;
+    const { teacherId, day, periodNumber, classId, sectionId } = req.query;
     const schoolId = req.user.schoolId;
 
-    if (!day || !periodNumber) {
+    if (!day || !periodNumber || !teacherId) {
       return res.status(200).json({ success: true, hasConflict: false, conflicts: [] });
     }
 
@@ -210,10 +198,8 @@ exports.checkConflict = async (req, res, next) => {
 
     const conflicts = [];
     let teacherConflict = null;
-    let roomConflict = null;
 
     const currentPeriod = Number(periodNumber);
-    const targetRoom = classroom ? classroom.trim().toLowerCase() : '';
 
     for (const tt of otherTimetables) {
       const className = `${tt.classId?.name || 'Class'} - ${tt.sectionId?.name || 'Section'}`;
@@ -229,15 +215,6 @@ exports.checkConflict = async (req, res, next) => {
               conflicts.push(teacherConflict);
             }
           }
-
-          // Check Room Conflict
-          if (targetRoom && slot.classroom) {
-            const slotRoom = slot.classroom.trim().toLowerCase();
-            if (slotRoom === targetRoom && slotRoom !== 'unassigned') {
-              roomConflict = `Room Conflict: ${classroom} is already occupied by ${className} on ${day} Period ${periodNumber}`;
-              conflicts.push(roomConflict);
-            }
-          }
         }
       }
     }
@@ -246,7 +223,7 @@ exports.checkConflict = async (req, res, next) => {
       success: true,
       hasConflict: conflicts.length > 0,
       teacherConflict,
-      roomConflict,
+      roomConflict: null,
       conflicts,
       message: conflicts.join(' | '),
     });

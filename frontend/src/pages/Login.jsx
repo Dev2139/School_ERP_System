@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { ShieldCheck, LogIn, Sparkles, UserCheck, GraduationCap, Building2, ChevronRight } from 'lucide-react';
+import { ShieldCheck, LogIn, Sparkles, UserCheck, GraduationCap, Building2, ChevronRight, Briefcase } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('principal@school.com');
   const [password, setPassword] = useState('06102006');
-  const [selectedRole, setSelectedRole] = useState('principal');
+  const [activeCategory, setActiveCategory] = useState('staff'); // 'staff' | 'student'
+  const [staffCredentialType, setStaffCredentialType] = useState('principal'); // 'principal' | 'teacher'
   const [loading, setLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -15,7 +16,7 @@ export default function Login() {
   const { addToast } = useNotification();
   const navigate = useNavigate();
 
-  // 75% Breadth Showcase Carousel Slides
+  // Showcase Carousel Slides
   const slides = [
     {
       image: 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?auto=format&fit=crop&w=1920&q=80',
@@ -47,34 +48,29 @@ export default function Login() {
     return () => clearInterval(timer);
   }, [slides.length]);
 
-  const roles = [
-    {
-      id: 'principal',
-      label: 'Principal',
-      email: 'principal@school.com',
-      pass: '06102006',
-      icon: Building2,
-    },
-    {
-      id: 'teacher',
-      label: 'Teacher',
-      email: 'manu@gmail.com',
-      pass: '06102006',
-      icon: UserCheck,
-    },
-    {
-      id: 'student',
-      label: 'Student',
-      email: 'student@school.com',
-      pass: '06102006',
-      icon: GraduationCap,
-    },
-  ];
+  const handleCategorySelect = (category) => {
+    setActiveCategory(category);
+    if (category === 'staff') {
+      if (staffCredentialType === 'principal') {
+        setEmail('principal@school.com');
+      } else {
+        setEmail('manu@gmail.com');
+      }
+      setPassword('06102006');
+    } else {
+      setEmail('student@school.com');
+      setPassword('06102006');
+    }
+  };
 
-  const handleRoleRadioChange = (roleObj) => {
-    setSelectedRole(roleObj.id);
-    setEmail(roleObj.email);
-    setPassword(roleObj.pass);
+  const handleStaffTypeSelect = (type) => {
+    setStaffCredentialType(type);
+    if (type === 'principal') {
+      setEmail('principal@school.com');
+    } else {
+      setEmail('manu@gmail.com');
+    }
+    setPassword('06102006');
   };
 
   const handleLogin = async (e) => {
@@ -114,50 +110,78 @@ export default function Login() {
           {/* Title Prompt */}
           <div>
             <h2 className="text-lg font-bold text-slate-100">Sign in to your account</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Select your role to access dashboard</p>
+            <p className="text-xs text-slate-400 mt-0.5">Select role portal to access dashboard</p>
           </div>
 
-          {/* RADIO BUTTON ROLE SELECTION SYSTEM */}
-          <div className="space-y-2">
+          {/* 2 MAIN ROLES: STAFF & STUDENT */}
+          <div className="space-y-3">
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Select User Role (Radio)
+              Select User Role
             </label>
-            <div className="space-y-2">
-              {roles.map((r) => {
-                const IconComponent = r.icon;
-                const isSelected = selectedRole === r.id || email === r.email;
-                return (
-                  <label
-                    key={r.id}
-                    onClick={() => handleRoleRadioChange(r)}
-                    className={`flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-indigo-600/15 border-indigo-500 text-white shadow-xs'
-                        : 'bg-slate-950/60 border-slate-800/80 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleCategorySelect('staff')}
+                className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  activeCategory === 'staff'
+                    ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-xs font-black'
+                    : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <Briefcase className={`w-5 h-5 ${activeCategory === 'staff' ? 'text-indigo-400' : 'text-slate-500'}`} />
+                <span className="text-xs">Staff Login</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleCategorySelect('student')}
+                className={`p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  activeCategory === 'student'
+                    ? 'bg-purple-600/20 border-purple-500 text-white shadow-xs font-black'
+                    : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <GraduationCap className={`w-5 h-5 ${activeCategory === 'student' ? 'text-purple-400' : 'text-slate-500'}`} />
+                <span className="text-xs">Student Login</span>
+              </button>
+            </div>
+
+            {/* STAFF CREDENTIAL DIFFERENTIATION SYSTEM */}
+            {activeCategory === 'staff' && (
+              <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2 animate-in fade-in duration-200">
+                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Differentiated Credentials:
+                </span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleStaffTypeSelect('principal')}
+                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                      staffCredentialType === 'principal'
+                        ? 'bg-indigo-600 text-white border-indigo-500'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="userRole"
-                        checked={isSelected}
-                        onChange={() => handleRoleRadioChange(r)}
-                        className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
-                      />
-                      <div className="flex items-center gap-2">
-                        <IconComponent className={`w-4 h-4 ${isSelected ? 'text-indigo-400' : 'text-slate-400'}`} />
-                        <span className="text-xs font-bold">{r.label}</span>
-                      </div>
-                    </div>
-                    {isSelected && <span className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider">Active</span>}
-                  </label>
-                );
-              })}
-            </div>
+                    <Building2 className="w-3 h-3" /> Principal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleStaffTypeSelect('teacher')}
+                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                      staffCredentialType === 'teacher'
+                        ? 'bg-sky-600 text-white border-sky-500'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <UserCheck className="w-3 h-3" /> Teacher
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Login Form Inputs */}
-          <form onSubmit={handleLogin} className="space-y-4 pt-2">
+          <form onSubmit={handleLogin} className="space-y-4 pt-1">
             <div>
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                 Email Address
@@ -198,7 +222,7 @@ export default function Login() {
         {/* Footer Security Badge */}
         <div className="pt-6 border-t border-slate-800/80 text-[11px] text-slate-500 flex items-center justify-center gap-1.5 font-medium">
           <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>Role-Based Access Control Secured</span>
+          <span>2-Role System (Staff & Student)</span>
         </div>
       </div>
 

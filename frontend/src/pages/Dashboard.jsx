@@ -56,7 +56,7 @@ export default function Dashboard() {
     totalExpectedFees: 0,
     totalCollectedFees: 0,
     totalPendingFees: 0,
-    todayAttendancePercentage: 100,
+    todayAttendancePercentage: 0,
     weeklyAttendance: [],
     gradePerformance: [],
     recentNotices: [],

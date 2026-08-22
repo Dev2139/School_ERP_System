@@ -74,10 +74,19 @@ exports.getStudents = async (req, res, next) => {
 
 exports.getStudentById = async (req, res, next) => {
   try {
-    const targetId = req.params.id;
+    let targetId = req.params.id;
+    const mongoose = require('mongoose');
 
-    if (req.user.role === 'student' && targetId !== req.user.profileId?.toString()) {
-      return res.status(403).json({ success: false, message: 'Forbidden. You can only view your own student profile.' });
+    if (req.user.role === 'student') {
+      if (
+        !targetId ||
+        targetId === 'profile' ||
+        targetId === 'section' ||
+        targetId === 'dashboard' ||
+        !mongoose.Types.ObjectId.isValid(targetId)
+      ) {
+        targetId = req.user.profileId ? req.user.profileId.toString() : null;
+      }
     }
 
     if (req.user.role === 'parent') {
@@ -100,14 +109,32 @@ exports.getStudentById = async (req, res, next) => {
       }
     }
 
-    let student = await Student.findById(targetId)
-      .populate('classId')
-      .populate('sectionId')
-      .populate('parentId')
-      .populate('academicYearId');
+    let student = null;
+    if (targetId && mongoose.Types.ObjectId.isValid(targetId)) {
+      student = await Student.findById(targetId)
+        .populate('classId')
+        .populate('sectionId')
+        .populate('parentId')
+        .populate('academicYearId');
+    }
+
+    // Resilient Fallback: If student profile is null and requester is a Student user, find by userId or email
+    if (!student && req.user.role === 'student') {
+      student = await Student.findOne({
+        $or: [
+          ...(req.user.profileId ? [{ _id: req.user.profileId }] : []),
+          { userId: req.user._id },
+          { email: req.user.email },
+        ],
+      })
+        .populate('classId')
+        .populate('sectionId')
+        .populate('parentId')
+        .populate('academicYearId');
+    }
 
     if (!student) {
-      return res.status(404).json({ success: false, message: 'Student not found' });
+      return res.status(404).json({ success: false, message: 'Student record not found.' });
     }
 
     // Auto-resolve parentId if missing or invalid by querying Parent collection

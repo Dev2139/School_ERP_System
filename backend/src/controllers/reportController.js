@@ -35,13 +35,15 @@ exports.getSummaryMetrics = async (req, res, next) => {
       });
     });
 
-    const todayAttendancePercentage = totalMarkedToday > 0 ? Number(((totalPresentToday / totalMarkedToday) * 100).toFixed(1)) : 95.0;
+    const todayAttendancePercentage = totalMarkedToday > 0
+      ? Number(((totalPresentToday / totalMarkedToday) * 100).toFixed(1))
+      : 0;
 
     // Dynamic Weekly Attendance trend (last 5 weekdays)
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-    const weeklyAttendance = days.map((day, idx) => ({
+    const weeklyAttendance = days.map((day) => ({
       day,
-      attendance: Number((92 + (idx * 1.5) % 7).toFixed(1)),
+      attendance: totalStudents > 0 ? (totalMarkedToday > 0 ? todayAttendancePercentage : 0) : 0,
     }));
 
     // Dynamic Class Academic Performance from Result database
@@ -53,7 +55,7 @@ exports.getSummaryMetrics = async (req, res, next) => {
         const avg = classResults.reduce((acc, r) => acc + r.percentage, 0) / classResults.length;
         gradePerformance.push({ class: cls.name, avgPct: Number(avg.toFixed(1)) });
       } else {
-        gradePerformance.push({ class: cls.name, avgPct: 85.0 });
+        gradePerformance.push({ class: cls.name, avgPct: 0 });
       }
     }
 
