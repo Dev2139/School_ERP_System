@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { Search, Bell, LogOut, User, Shield, ChevronDown, GraduationCap } from 'lucide-react';
+import { Search, Bell, LogOut, User, Shield, ChevronDown, GraduationCap, Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 
-export default function Navbar({ onOpenSearch }) {
+export default function Navbar({ onOpenSearch, onToggleMobileSidebar }) {
   const { user, logout, switchDemoRole } = useAuth();
   const { addToast } = useNotification();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [selectedChildIndex, setSelectedChildIndex] = useState(0);
 
   const demoRoles = [
-    { label: 'Principal', role: 'admin', email: 'principal@school.com', pass: 'Admin@123', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-200' },
-    { label: 'Teacher', role: 'teacher', email: 'teacher@school.com', pass: 'Teacher@123', color: 'bg-sky-500/10 text-sky-600 border-sky-200' },
-    { label: 'Student', role: 'student', email: 'student@school.com', pass: 'Student@123', color: 'bg-purple-500/10 text-purple-600 border-purple-200' },
+    { label: 'Principal', role: 'admin', email: 'principal@school.com', pass: '06102006', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-200' },
+    { label: 'Teacher', role: 'teacher', email: 'manu@gmail.com', pass: '06102006', color: 'bg-sky-500/10 text-sky-600 border-sky-200' },
+    { label: 'Student', role: 'student', email: 'student@school.com', pass: '06102006', color: 'bg-purple-500/10 text-purple-600 border-purple-200' },
   ];
 
   const handleRoleSwitch = async (r) => {
@@ -26,15 +26,23 @@ export default function Navbar({ onOpenSearch }) {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm">
-      {/* Left: Global Search Trigger */}
-      <div className="flex items-center gap-4">
+    <header className="h-16 bg-white border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+      {/* Left: Mobile Hamburger Toggle + Search */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onToggleMobileSidebar}
+          className="lg:hidden p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+          aria-label="Open Mobile Menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
         <button
           onClick={onOpenSearch}
-          className="flex items-center gap-3 px-4 py-2 bg-slate-100 hover:bg-slate-200/80 text-slate-500 rounded-xl text-sm font-medium transition-all w-64 md:w-80 border border-slate-200"
+          className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 bg-slate-100 hover:bg-slate-200/80 text-slate-500 rounded-xl text-xs sm:text-sm font-medium transition-all w-36 sm:w-64 md:w-80 border border-slate-200"
         >
-          <Search className="w-4 h-4 text-slate-400" />
-          <span className="flex-1 text-left">Search everything...</span>
+          <Search className="w-4 h-4 text-slate-400 shrink-0" />
+          <span className="flex-1 text-left truncate">Search everything...</span>
           <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 bg-white border border-slate-300 rounded shadow-xs">
             Ctrl K
           </kbd>

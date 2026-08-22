@@ -123,23 +123,50 @@ export default function StudentProfile() {
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <h3 className="font-bold text-slate-800 border-b pb-2">Personal Information</h3>
-              <div className="space-y-2 text-sm text-slate-600">
-                <p><strong>Email:</strong> {student.email}</p>
-                <p><strong>Phone:</strong> {student.phone || 'N/A'}</p>
-                <p><strong>Gender:</strong> {student.gender}</p>
-                <p><strong>Blood Group:</strong> {student.bloodGroup}</p>
-                <p><strong>Address:</strong> {student.address}, {student.city}, {student.state} - {student.pincode}</p>
+              <h3 className="font-extrabold text-slate-800 border-b border-slate-100 pb-2 uppercase text-xs tracking-wider">
+                Personal Information
+              </h3>
+              <div className="space-y-2.5 text-xs text-slate-600 font-medium">
+                <p>
+                  <strong className="text-slate-400 uppercase text-[10px] block font-bold">Parent / Guardian Email:</strong>
+                  <span className="font-extrabold text-indigo-600 text-sm">{student.email || student.parentId?.email || 'N/A'}</span>
+                </p>
+                <p>
+                  <strong className="text-slate-400 uppercase text-[10px] block font-bold">Gender:</strong>
+                  <span className="font-bold text-slate-800 capitalize">{student.gender || 'male'}</span>
+                </p>
+                <p>
+                  <strong className="text-slate-400 uppercase text-[10px] block font-bold">Blood Group:</strong>
+                  <span className="font-bold text-slate-800">{student.bloodGroup || 'O+'}</span>
+                </p>
+                <p>
+                  <strong className="text-slate-400 uppercase text-[10px] block font-bold">Residential Address:</strong>
+                  <span className="font-bold text-slate-800">{student.address || 'N/A'} {student.city ? `, ${student.city}` : ''} {student.state ? `, ${student.state}` : ''}</span>
+                </p>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h3 className="font-bold text-slate-800 border-b pb-2">Guardian Information</h3>
-              <div className="space-y-2 text-sm text-slate-600">
-                <p><strong>Guardian Name:</strong> {student.parentId?.name || 'D D Patel'}</p>
-                <p><strong>Relationship:</strong> {student.parentId?.relationship || 'Father'}</p>
-                <p><strong>Emergency Contact:</strong> {student.emergencyContact || student.parentId?.phone || '+91 6354236105'}</p>
-                <p><strong>Notes:</strong> {student.notes || 'No special medical conditions recorded.'}</p>
+              <h3 className="font-extrabold text-slate-800 border-b border-slate-100 pb-2 uppercase text-xs tracking-wider">
+                Guardian Information
+              </h3>
+              <div className="space-y-2.5 text-xs text-slate-600 font-medium">
+                <p>
+                  <strong className="text-slate-400 uppercase text-[10px] block font-bold">Guardian Name:</strong>
+                  <span className="font-extrabold text-slate-900 text-sm">{student.fatherName || student.parentId?.name || 'Guardian'}</span>
+                </p>
+                <p>
+                  <strong className="text-slate-400 uppercase text-[10px] block font-bold">Relationship:</strong>
+                  <span className="font-bold text-slate-800 capitalize">{student.parentId?.relationship || 'Father'}</span>
+                </p>
+                <p>
+                  <strong className="text-slate-400 uppercase text-[10px] block font-bold">Parent Emergency Phone:</strong>
+                  <span className="font-extrabold text-emerald-600 text-sm font-mono">{student.fatherPhone || student.emergencyContact || student.parentId?.phone || 'N/A'}</span>
+                </p>
+                <p>
+                  <strong className="text-slate-400 uppercase text-[10px] block font-bold">Medical / Health Notes:</strong>
+                  <span className="font-semibold text-slate-500">{student.notes || 'No special medical conditions recorded.'}</span>
+                </p>
               </div>
             </div>
           </div>

@@ -17,12 +17,16 @@ import {
   CheckCircle,
   UserCheck,
   Sparkles,
+  Edit3,
+  Trash2,
 } from 'lucide-react';
 
 export default function StudentList() {
   const { user } = useAuth();
   const { addToast } = useNotification();
   const navigate = useNavigate();
+
+  const isPrincipal = ['super_admin', 'admin'].includes(user?.role);
 
   // Active View Tab: 'general' (All Students) | 'classwise' (Class-Wise Directory)
   const [activeTab, setActiveTab] = useState('general');
@@ -38,15 +42,22 @@ export default function StudentList() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
+
+  // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedStudentForCard, setSelectedStudentForCard] = useState(null);
+  const [selectedStudentForEdit, setSelectedStudentForEdit] = useState(null);
+  const [selectedStudentForDelete, setSelectedStudentForDelete] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   if (user?.role === 'student' && user?.profileId) {
     const pid = user.profileId._id || user.profileId;
     return <Navigate to={`/students/${pid}`} replace />;
   }
 
-  // Form State
+  // Registration Form State
   const [formData, setFormData] = useState({
     admissionNumber: `ADM-${Date.now().toString().slice(-4)}`,
     studentId: `STU-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -65,6 +76,23 @@ export default function StudentList() {
     classId: '',
     sectionId: '',
     academicYearId: '',
+  });
+
+  // Edit Form State
+  const [editFormData, setEditFormData] = useState({
+    firstName: '',
+    lastName: '',
+    dob: '',
+    gender: 'male',
+    email: '',
+    phone: '',
+    admissionNumber: '',
+    rollNumber: 1,
+    classId: '',
+    sectionId: '',
+    fatherName: '',
+    fatherPhone: '',
+    status: 'active',
   });
 
   useEffect(() => {
@@ -98,22 +126,17 @@ export default function StudentList() {
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      let url = `/students?page=${page}&limit=10`;
+      let query = `?page=${page}&limit=10&search=${search}`;
 
-      // If in classwise view or filter set
       if (activeTab === 'classwise') {
-        if (selectedClassId) url += `&classId=${selectedClassId}`;
-        if (selectedSectionId) url += `&sectionId=${selectedSectionId}`;
+        if (selectedClassId) query += `&classId=${selectedClassId}`;
+        if (selectedSectionId) query += `&sectionId=${selectedSectionId}`;
       }
 
-      if (search && search.trim()) {
-        url += `&search=${encodeURIComponent(search.trim())}`;
-      }
-
-      const res = await api.get(url);
+      const res = await api.get(`/students${query}`);
       if (res.data.success) {
         setStudents(res.data.data);
-        setTotal(res.data.pagination.total || res.data.data.length);
+        setTotal(res.data.pagination.total);
       }
     } catch (err) {
       console.error(err);
@@ -122,61 +145,112 @@ export default function StudentList() {
     }
   };
 
-  const handleCreateStudent = async (e) => {
+  const handleRegisterStudent = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       const res = await api.post('/students', formData);
       if (res.data.success) {
-        addToast(
-          `Student & User account created! Login: ${formData.email} (Initial Pass: DOB DDMMYYYY)`,
-          'success'
-        );
+        addToast('Student registered successfully!', 'success');
         setIsAddModalOpen(false);
         fetchStudents();
       }
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to add student', 'error');
+      addToast(err.response?.data?.message || 'Failed to register student', 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const activeClassObj = classes.find((c) => c._id === selectedClassId);
-  const activeSectionObj = activeClassObj?.sections?.find((s) => s._id === selectedSectionId);
+  const openEditModal = (student) => {
+    setSelectedStudentForEdit(student);
+    setEditFormData({
+      firstName: student.firstName || '',
+      lastName: student.lastName || '',
+      dob: student.dob ? new Date(student.dob).toISOString().split('T')[0] : '2013-01-01',
+      gender: student.gender || 'male',
+      email: student.email || '',
+      phone: student.phone || '',
+      admissionNumber: student.admissionNumber || '',
+      rollNumber: student.rollNumber || 1,
+      classId: student.classId?._id || student.classId || '',
+      sectionId: student.sectionId?._id || student.sectionId || '',
+      fatherName: student.fatherName || '',
+      fatherPhone: student.fatherPhone || '',
+      status: student.status || 'active',
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateStudent = async (e) => {
+    e.preventDefault();
+    if (!selectedStudentForEdit) return;
+
+    setSubmitting(true);
+    try {
+      const res = await api.put(`/students/${selectedStudentForEdit._id}`, editFormData);
+      if (res.data.success) {
+        addToast(`Student profile updated successfully!`, 'success');
+        setIsEditModalOpen(false);
+        fetchStudents();
+      }
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to update student profile', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteStudent = async () => {
+    if (!selectedStudentForDelete) return;
+
+    setSubmitting(true);
+    try {
+      const res = await api.delete(`/students/${selectedStudentForDelete._id}`);
+      if (res.data.success) {
+        addToast(res.data.message || 'Student deleted successfully!', 'success');
+        setIsDeleteModalOpen(false);
+        fetchStudents();
+      }
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to delete student', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const selectedClassForForm = classes.find((c) => c._id === formData.classId);
+  const selectedClassForEdit = classes.find((c) => c._id === editFormData.classId);
+  const selectedClassForFilter = classes.find((c) => c._id === selectedClassId);
 
   const columns = [
     {
-      header: 'Student Profile',
+      header: 'Roll #',
+      accessor: 'rollNumber',
+      render: (row) => <span className="font-mono font-bold text-indigo-600">#{row.rollNumber || '0'}</span>,
+    },
+    {
+      header: 'Student Name',
       render: (row) => (
         <div className="flex items-center gap-3">
           <img
-            src={row.profilePhoto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${row.firstName}`}
-            alt={row.firstName}
-            className="w-9 h-9 rounded-full object-cover border border-slate-200"
+            src={row.profilePhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop'}
+            alt={`${row.firstName} ${row.lastName}`}
+            className="w-9 h-9 rounded-xl object-cover border border-slate-200"
           />
           <div>
-            <div
-              className="font-bold text-slate-900 hover:text-indigo-600 cursor-pointer transition-colors"
-              onClick={() => navigate(`/students/${row._id}`)}
-            >
+            <div className="font-black text-slate-900 text-sm">
               {row.firstName} {row.lastName}
             </div>
-            <div className="text-[11px] text-slate-400 font-mono">Adm: {row.admissionNumber}</div>
+            <div className="text-[10px] text-slate-400 font-mono">Adm: {row.admissionNumber}</div>
           </div>
-        </div>
-      ),
-    },
-    {
-      header: 'ID / Roll',
-      render: (row) => (
-        <div>
-          <div className="font-bold text-slate-700 font-mono">{row.studentId}</div>
-          <div className="text-xs text-slate-400">Roll: {row.rollNumber}</div>
         </div>
       ),
     },
     {
       header: 'Class & Section',
       render: (row) => (
-        <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-100">
+        <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-xl text-xs border border-indigo-100">
           {row.classId?.name || 'Class'} - {row.sectionId?.name || 'Sec A'}
         </span>
       ),
@@ -185,8 +259,8 @@ export default function StudentList() {
       header: 'Parent Contact',
       render: (row) => (
         <div className="text-xs text-slate-600">
-          <p className="font-bold text-slate-800">{row.parentId?.name || 'Guardian'}</p>
-          <p className="text-slate-400">{row.emergencyContact}</p>
+          <p className="font-bold text-slate-800">{row.fatherName || row.parentId?.name || 'Guardian'}</p>
+          <p className="text-[10px] text-slate-400 font-mono">{row.fatherPhone || row.emergencyContact}</p>
         </div>
       ),
     },
@@ -195,7 +269,7 @@ export default function StudentList() {
       render: (row) => (
         <span
           className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-            row.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+            row.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
           }`}
         >
           {row.status}
@@ -205,21 +279,44 @@ export default function StudentList() {
     {
       header: 'Actions',
       render: (row) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => navigate(`/students/${row._id}`)}
-            className="p-1.5 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
+            className="p-2 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-bold transition-all cursor-pointer"
             title="View Full Profile"
           >
             <Eye className="w-4 h-4" />
           </button>
           <button
             onClick={() => setSelectedStudentForCard(row)}
-            className="p-1.5 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-100 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
+            className="p-2 rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-100 text-xs font-bold transition-all cursor-pointer"
             title="Print ID Card"
           >
             <CreditCard className="w-4 h-4" />
           </button>
+
+          {(isPrincipal || user?.role === 'teacher') && (
+            <button
+              onClick={() => openEditModal(row)}
+              className="p-2 rounded-xl bg-sky-50 text-sky-600 hover:bg-sky-100 text-xs font-bold transition-all cursor-pointer"
+              title="Edit Student Record"
+            >
+              <Edit3 className="w-4 h-4" />
+            </button>
+          )}
+
+          {isPrincipal && (
+            <button
+              onClick={() => {
+                setSelectedStudentForDelete(row);
+                setIsDeleteModalOpen(true);
+              }}
+              className="p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-bold transition-all cursor-pointer"
+              title="Delete Student Record"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       ),
     },
@@ -237,18 +334,20 @@ export default function StudentList() {
             <div>
               <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Student Directory</h1>
               <p className="text-xs text-slate-500 font-medium">
-                Manage student enrollments, general rosters, and class-wise student lists
+                Manage student enrollments, edit profiles, and view class-wise student lists
               </p>
             </div>
           </div>
 
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Register New Student</span>
-          </button>
+          {isPrincipal && (
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl text-xs shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Register New Student</span>
+            </button>
+          )}
         </div>
 
         {/* VIEW TAB SWITCHER */}
@@ -259,16 +358,13 @@ export default function StudentList() {
                 setActiveTab('general');
                 setSelectedClassId('');
                 setSelectedSectionId('');
-                setPage(1);
               }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                activeTab === 'general'
-                  ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800'
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${
+                activeTab === 'general' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              <Users className="w-4 h-4" />
-              <span>General Student Roster</span>
+              <Users className="w-3.5 h-3.5" />
+              <span>General Roster</span>
             </button>
 
             <button
@@ -276,265 +372,358 @@ export default function StudentList() {
                 setActiveTab('classwise');
                 if (classes.length > 0) {
                   setSelectedClassId(classes[0]._id);
+                  setSelectedSectionId(classes[0].sections?.[0]?._id || '');
                 }
-                setPage(1);
               }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                activeTab === 'classwise'
-                  ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800'
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${
+                activeTab === 'classwise' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              <School className="w-4 h-4" />
-              <span>Class-Wise Directory</span>
+              <Layers className="w-3.5 h-3.5" />
+              <span>Class-Wise Student View</span>
             </button>
           </div>
-
-          <div className="text-xs font-bold text-slate-400">
-            Total Students: <span className="text-slate-900 font-black">{total}</span>
-          </div>
         </div>
+
+        {/* CLASS-WISE DROPDOWN FILTER BAR */}
+        {activeTab === 'classwise' && (
+          <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex flex-wrap items-center gap-4 animate-in fade-in duration-200">
+            <div className="flex items-center gap-2 font-bold text-xs text-indigo-900">
+              <Filter className="w-4 h-4 text-indigo-600" />
+              <span>Filter By Class & Section:</span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div>
+                <label className="block text-[10px] font-bold text-indigo-600 uppercase mb-1">Class</label>
+                <select
+                  value={selectedClassId}
+                  onChange={(e) => {
+                    setSelectedClassId(e.target.value);
+                    const cls = classes.find((c) => c._id === e.target.value);
+                    setSelectedSectionId(cls?.sections?.[0]?._id || '');
+                  }}
+                  className="px-3.5 py-1.5 border border-indigo-200 rounded-xl text-xs font-bold bg-white text-slate-800 focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                >
+                  {classes.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-indigo-600 uppercase mb-1">Section</label>
+                <select
+                  value={selectedSectionId}
+                  onChange={(e) => setSelectedSectionId(e.target.value)}
+                  className="px-3.5 py-1.5 border border-indigo-200 rounded-xl text-xs font-bold bg-white text-slate-800 focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                >
+                  <option value="">All Sections</option>
+                  {selectedClassForFilter?.sections?.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* CLASS-WISE FILTER BAR (WHEN IN CLASSWISE TAB) */}
-      {activeTab === 'classwise' && (
-        <div className="bg-slate-900 text-white rounded-3xl p-6 shadow-md space-y-4">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-            <div>
-              <div className="text-[10px] font-black uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
-                <Filter className="w-3.5 h-3.5" /> Class & Section Filter
-              </div>
-              <h2 className="text-lg font-black mt-0.5">
-                {activeClassObj ? activeClassObj.name : 'Select Class'}{' '}
-                {activeSectionObj ? `- ${activeSectionObj.name}` : ''}
-              </h2>
-            </div>
-
-            {/* CLASS SELECTOR TABS */}
-            <div className="flex flex-wrap items-center gap-2">
-              {classes.map((cls) => (
-                <button
-                  key={cls._id}
-                  onClick={() => {
-                    setSelectedClassId(cls._id);
-                    setSelectedSectionId('');
-                    setPage(1);
-                  }}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                    selectedClassId === cls._id
-                      ? 'bg-indigo-600 text-white shadow-md'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                  }`}
-                >
-                  {cls.name} ({cls.code})
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* SECTION SELECTOR & CLASS SUMMARY */}
-          {activeClassObj && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sections:</span>
-                <button
-                  onClick={() => {
-                    setSelectedSectionId('');
-                    setPage(1);
-                  }}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    !selectedSectionId
-                      ? 'bg-white text-slate-900'
-                      : 'bg-slate-800 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  All Sections
-                </button>
-                {activeClassObj.sections?.map((sec) => (
-                  <button
-                    key={sec._id}
-                    onClick={() => {
-                      setSelectedSectionId(sec._id);
-                      setPage(1);
-                    }}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      selectedSectionId === sec._id
-                        ? 'bg-white text-slate-900'
-                        : 'bg-slate-800 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {sec.name} ({sec.roomNo})
-                  </button>
-                ))}
-              </div>
-
-              {activeSectionObj?.classTeacher && (
-                <div className="flex items-center gap-2 px-3 py-1 bg-indigo-950/80 border border-indigo-500/30 rounded-xl text-xs text-indigo-200">
-                  <UserCheck className="w-4 h-4 text-indigo-400" />
-                  <span>Class Teacher: <strong className="text-white">{activeSectionObj.classTeacher.name}</strong></span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Main Table */}
+      {/* STUDENT DATA TABLE */}
       <DataTable
         columns={columns}
         data={students}
-        totalItems={total}
+        total={total}
         page={page}
-        limit={10}
         onPageChange={setPage}
-        onSearchChange={setSearch}
-        onAddClick={['student', 'parent'].includes(user?.role) ? null : () => setIsAddModalOpen(true)}
-        addLabel="Register Student"
+        onSearch={setSearch}
         loading={loading}
       />
 
-      {/* Register Student Modal */}
-      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Register New Student">
-        <form onSubmit={handleCreateStudent} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">First Name</label>
-              <input
-                type="text"
-                required
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                className="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500"
-              />
+      {/* EDIT STUDENT MODAL FOR PRINCIPAL */}
+      {isEditModalOpen && selectedStudentForEdit && (
+        <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Student Record">
+          <form onSubmit={handleUpdateStudent} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">First Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.firstName}
+                  onChange={(e) => setEditFormData({ ...editFormData, firstName: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Last Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.lastName}
+                  onChange={(e) => setEditFormData({ ...editFormData, lastName: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Last Name</label>
-              <input
-                type="text"
-                required
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                className="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Email (Login ID)</label>
-              <input
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Date of Birth (Optional)</label>
-              <input
-                type="date"
-                value={formData.dob}
-                onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-                className="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Roll Number</label>
-              <input
-                type="number"
-                required
-                value={formData.rollNumber}
-                onChange={(e) => setFormData({ ...formData, rollNumber: Number(e.target.value) })}
-                className="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Emergency Contact</label>
-              <input
-                type="text"
-                value={formData.emergencyContact}
-                onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })}
-                className="w-full px-3 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
-                Class <span className="text-rose-500">*</span>
-              </label>
-              <select
-                required
-                value={formData.classId}
-                onChange={(e) => {
-                  const selClass = classes.find((c) => c._id === e.target.value);
-                  setFormData({
-                    ...formData,
-                    classId: e.target.value,
-                    sectionId: selClass?.sections?.[0]?._id || '',
-                  });
-                }}
-                className="w-full px-3 py-2 border rounded-xl text-sm bg-white font-semibold focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">Select Class *</option>
-                {classes.map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
-                Section <span className="text-rose-500">*</span>
-              </label>
-              <select
-                required
-                value={formData.sectionId}
-                onChange={(e) => setFormData({ ...formData, sectionId: e.target.value })}
-                className="w-full px-3 py-2 border rounded-xl text-sm bg-white font-semibold focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">Select Section *</option>
-                {classes
-                  .find((c) => c._id === formData.classId)
-                  ?.sections?.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.name} ({s.roomNo})
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Assign Class</label>
+                <select
+                  value={editFormData.classId}
+                  onChange={(e) => {
+                    const cId = e.target.value;
+                    const cls = classes.find((c) => c._id === cId);
+                    setEditFormData({
+                      ...editFormData,
+                      classId: cId,
+                      sectionId: cls?.sections?.[0]?._id || '',
+                    });
+                  }}
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-indigo-500"
+                >
+                  {classes.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name}
                     </option>
                   ))}
-              </select>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Assign Section</label>
+                <select
+                  value={editFormData.sectionId}
+                  onChange={(e) => setEditFormData({ ...editFormData, sectionId: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-indigo-500"
+                >
+                  {selectedClassForEdit?.sections?.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Admission #</label>
+                <input
+                  type="text"
+                  value={editFormData.admissionNumber}
+                  onChange={(e) => setEditFormData({ ...editFormData, admissionNumber: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-xs font-bold font-mono focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Roll #</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={editFormData.rollNumber}
+                  onChange={(e) => setEditFormData({ ...editFormData, rollNumber: Number(e.target.value) })}
+                  className="w-full px-3 py-2 border rounded-xl text-xs font-bold font-mono focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Status</label>
+                <select
+                  value={editFormData.status}
+                  onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Father / Guardian Name</label>
+                <input
+                  type="text"
+                  value={editFormData.fatherName}
+                  onChange={(e) => setEditFormData({ ...editFormData, fatherName: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Parent Email</label>
+                <input
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Parent Emergency Phone</label>
+                <input
+                  type="text"
+                  value={editFormData.fatherPhone}
+                  onChange={(e) => setEditFormData({ ...editFormData, fatherPhone: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {submitting ? 'Updating...' : 'Save Student Profile'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* DELETE STUDENT CONFIRMATION MODAL */}
+      {isDeleteModalOpen && selectedStudentForDelete && (
+        <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Delete Student Record">
+          <div className="space-y-4">
+            <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-800 space-y-1">
+              <p className="font-black text-rose-900 text-sm">Are you sure you want to delete this student?</p>
+              <p>
+                Student: <strong>{selectedStudentForDelete.firstName} {selectedStudentForDelete.lastName}</strong> (Adm: {selectedStudentForDelete.admissionNumber})
+              </p>
+              <p className="text-[11px] text-rose-700 font-medium pt-1">
+                This action will permanently delete the student profile and remove the associated login account.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteStudent}
+                disabled={submitting}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow-md shadow-rose-600/20 transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {submitting ? 'Deleting...' : 'Delete Permanently'}
+              </button>
             </div>
           </div>
+        </Modal>
+      )}
 
-          <div className="pt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setIsAddModalOpen(false)}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 rounded-xl"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 rounded-xl shadow-md"
-            >
-              Save Student
-            </button>
-          </div>
-        </form>
-      </Modal>
+      {/* REGISTER NEW STUDENT MODAL */}
+      {isAddModalOpen && (
+        <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Register New Student">
+          <form onSubmit={handleRegisterStudent} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">First Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Last Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
 
-      {/* ID Card Modal */}
-      <StudentIdCardModal
-        isOpen={Boolean(selectedStudentForCard)}
-        onClose={() => setSelectedStudentForCard(null)}
-        student={selectedStudentForCard}
-      />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Class</label>
+                <select
+                  value={formData.classId}
+                  onChange={(e) => {
+                    const cId = e.target.value;
+                    const cls = classes.find((c) => c._id === cId);
+                    setFormData({
+                      ...formData,
+                      classId: cId,
+                      sectionId: cls?.sections?.[0]?._id || '',
+                    });
+                  }}
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-indigo-500"
+                >
+                  {classes.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Section</label>
+                <select
+                  value={formData.sectionId}
+                  onChange={(e) => setFormData({ ...formData, sectionId: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-indigo-500"
+                >
+                  {selectedClassForForm?.sections?.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {submitting ? 'Registering...' : 'Register Student'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* STUDENT ID CARD MODAL */}
+      {selectedStudentForCard && (
+        <StudentIdCardModal
+          isOpen={Boolean(selectedStudentForCard)}
+          onClose={() => setSelectedStudentForCard(null)}
+          student={selectedStudentForCard}
+        />
+      )}
     </div>
   );
 }

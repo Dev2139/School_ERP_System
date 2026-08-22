@@ -283,11 +283,25 @@ exports.updateStudent = async (req, res, next) => {
 
 exports.deleteStudent = async (req, res, next) => {
   try {
-    const student = await Student.findByIdAndUpdate(req.params.id, { status: 'inactive' }, { new: true });
+    const student = await Student.findById(req.params.id);
     if (!student) return res.status(404).json({ success: false, message: 'Student not found' });
 
-    await logAudit(req, 'STUDENT_DEACTIVATED', 'Student', student._id.toString());
-    res.status(200).json({ success: true, message: 'Student deactivated successfully' });
+    // Delete associated User login account if exists
+    if (student.userId) {
+      await User.findByIdAndDelete(student.userId);
+    } else {
+      await User.deleteMany({ profileId: student._id });
+    }
+
+    // Remove student reference from Parent children list
+    if (student.parentId) {
+      await Parent.findByIdAndUpdate(student.parentId, { $pull: { children: student._id } });
+    }
+
+    await Student.findByIdAndDelete(req.params.id);
+
+    await logAudit(req, 'STUDENT_DELETED', 'Student', req.params.id, { name: `${student.firstName} ${student.lastName}` });
+    res.status(200).json({ success: true, message: `Student ${student.firstName} ${student.lastName} deleted successfully` });
   } catch (error) {
     next(error);
   }

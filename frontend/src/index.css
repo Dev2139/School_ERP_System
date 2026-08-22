@@ -3,12 +3,26 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
   body {
-    @apply bg-slate-50 text-slate-800 antialiased;
+    @apply bg-slate-50 text-slate-800 antialiased overflow-x-hidden;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 }
 
-/* Custom scrollbar */
+/* Touch Friendly Tap Targets */
+button, input, select, a {
+  touch-action: manipulation;
+}
+
+/* Smooth Horizontal Scrollbar for Mobile Tables */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -28,10 +42,10 @@
   body * {
     visibility: hidden;
   }
-  .printable-area, .printable-area * {
+  .printable-area, .printable-area *, .printable-payslip, .printable-payslip * {
     visibility: visible;
   }
-  .printable-area {
+  .printable-area, .printable-payslip {
     position: absolute;
     left: 0;
     top: 0;

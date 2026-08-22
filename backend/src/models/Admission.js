@@ -9,6 +9,7 @@ const admissionSchema = new mongoose.Schema(
     dob: { type: Date, required: true },
     gender: { type: String, enum: ['male', 'female', 'other'], required: true },
     targetClassId: { type: mongoose.Schema.Types.ObjectId, ref: 'Class', required: true },
+    targetSectionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Section' },
     parentName: { type: String, required: true },
     parentEmail: { type: String, required: true, lowercase: true },
     parentPhone: { type: String, required: true },

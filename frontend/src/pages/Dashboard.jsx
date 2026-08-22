@@ -68,15 +68,68 @@ export default function Dashboard() {
   const [activeNoticeTab, setActiveNoticeTab] = useState('Notification');
   const [studentNotices, setStudentNotices] = useState([]);
 
+  // Dynamic Teacher Section State
+  const [teacherAssignedSection, setTeacherAssignedSection] = useState(null);
+  const [teacherStudentsCount, setTeacherStudentsCount] = useState(0);
+
   useEffect(() => {
     fetchMetrics();
-    if (role === 'parent') {
+    if (role === 'teacher') {
+      fetchTeacherAssignedData();
+    } else if (role === 'parent') {
       fetchMyChildren();
     } else if (role === 'student' && user?.profileId) {
       fetchStudentProfile();
       fetchStudentNotices();
     }
   }, [user, role]);
+
+  const fetchTeacherAssignedData = async () => {
+    try {
+      const teacherProfileId = (user?.profileId?._id || user?.profileId || user?.profile?._id || '').toString();
+      const teacherEmail = (user?.email || '').toLowerCase().trim();
+
+      const res = await api.get('/academics/classes');
+      if (res.data.success) {
+        const classData = res.data.data;
+        let matchedClass = null;
+        let matchedSection = null;
+
+        for (const c of classData) {
+          if (c.sections) {
+            for (const s of c.sections) {
+              const ctObj = s.classTeacher;
+              const ctId = (ctObj?._id || ctObj || '').toString();
+              const ctEmail = (ctObj?.email || '').toLowerCase().trim();
+
+              if ((teacherProfileId && ctId === teacherProfileId) || (teacherEmail && ctEmail === teacherEmail)) {
+                matchedClass = c;
+                matchedSection = s;
+                break;
+              }
+            }
+          }
+          if (matchedClass) break;
+        }
+
+        if (matchedClass && matchedSection) {
+          setTeacherAssignedSection({
+            className: matchedClass.name,
+            sectionName: matchedSection.name,
+            classId: matchedClass._id,
+            sectionId: matchedSection._id,
+          });
+
+          const studentsRes = await api.get(`/students?classId=${matchedClass._id}&sectionId=${matchedSection._id}`);
+          if (studentsRes.data.success) {
+            setTeacherStudentsCount(studentsRes.data.data?.length || 0);
+          }
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const fetchStudentNotices = async () => {
     try {
@@ -219,6 +272,11 @@ export default function Dashboard() {
   // 2. TEACHER DASHBOARD
   // -------------------------------------------------------------------
   if (role === 'teacher') {
+    const teacherName = user?.profile?.name || user?.username || 'Faculty Member';
+    const assignedText = teacherAssignedSection
+      ? `${teacherAssignedSection.className} - ${teacherAssignedSection.sectionName}`
+      : 'Subject Teacher';
+
     return (
       <div className="space-y-6">
         <div className="bg-gradient-to-r from-sky-900 via-slate-900 to-indigo-950 rounded-3xl p-6 text-white shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -226,24 +284,36 @@ export default function Dashboard() {
             <span className="inline-block px-3 py-1 bg-sky-500/20 border border-sky-400/30 rounded-full text-sky-300 text-xs font-semibold uppercase tracking-wider mb-2">
               Faculty Workspace
             </span>
-            <h1 className="text-2xl font-extrabold tracking-tight">Welcome, Faculty Member!</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight">Welcome, {teacherName}!</h1>
             <p className="text-sm text-sky-200 mt-1">Manage assigned classes, daily attendance, and homework grading.</p>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => navigate('/attendance')} className="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 font-bold rounded-xl text-xs shadow-md">
+            <button onClick={() => navigate('/attendance')} className="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 font-bold rounded-xl text-xs shadow-md cursor-pointer">
               Mark Attendance
             </button>
-            <button onClick={() => navigate('/homework')} className="px-4 py-2.5 bg-white/10 hover:bg-white/20 font-bold rounded-xl text-xs border border-white/20">
+            <button onClick={() => navigate('/homework')} className="px-4 py-2.5 bg-white/10 hover:bg-white/20 font-bold rounded-xl text-xs border border-white/20 cursor-pointer">
               Create Homework
             </button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <StatCard title="Assigned Classes" value="Class 7 - A" subtext="Mathematics & Science" icon={BookOpen} color="sky" />
-          <StatCard title="Class Students" value={metrics.totalStudents || 25} subtext="Enrolled Students" icon={GraduationCap} color="indigo" />
+          <StatCard
+            title="Assigned Classes"
+            value={assignedText}
+            subtext={teacherAssignedSection ? 'Class Teacher' : 'Faculty Member'}
+            icon={BookOpen}
+            color="sky"
+          />
+          <StatCard
+            title="Class Students"
+            value={teacherAssignedSection ? teacherStudentsCount : (metrics.totalStudents || 0)}
+            subtext="Enrolled Students"
+            icon={GraduationCap}
+            color="indigo"
+          />
           <StatCard title="Today's Attendance" value={`${metrics.todayAttendancePercentage}%`} subtext="Presence Rate" icon={CalendarCheck} color="emerald" />
-          <StatCard title="Pending Grading" value="3 Assignments" subtext="Homework Submissions" icon={CheckSquare} color="amber" />
+          <StatCard title="Pending Tasks" value="Active" subtext="Class Management" icon={CheckSquare} color="amber" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -253,19 +323,19 @@ export default function Dashboard() {
             <div className="space-y-3">
               <div className="p-3.5 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-between">
                 <div>
-                  <div className="font-extrabold text-slate-900 text-xs">Period 1: Mathematics (Algebra)</div>
-                  <div className="text-[10px] text-slate-500">09:00 AM - 09:45 AM | Class 7 - Section A</div>
+                  <div className="font-extrabold text-slate-900 text-xs">Period 1: Homeroom Attendance</div>
+                  <div className="text-[10px] text-slate-500">09:00 AM - 09:45 AM | {assignedText}</div>
                 </div>
-                <button onClick={() => navigate('/attendance')} className="px-3 py-1 bg-sky-600 text-white rounded-lg text-[10px] font-bold">
+                <button onClick={() => navigate('/attendance')} className="px-3 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-[10px] font-bold cursor-pointer">
                   Mark Attendance
                 </button>
               </div>
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
                 <div>
-                  <div className="font-extrabold text-slate-900 text-xs">Period 3: General Science</div>
-                  <div className="text-[10px] text-slate-500">11:00 AM - 11:45 AM | Class 7 - Section A</div>
+                  <div className="font-extrabold text-slate-900 text-xs">Period 3: Subject Lecture</div>
+                  <div className="text-[10px] text-slate-500">11:00 AM - 11:45 AM | {assignedText}</div>
                 </div>
-                <button onClick={() => navigate('/homework')} className="px-3 py-1 bg-indigo-600 text-white rounded-lg text-[10px] font-bold">
+                <button onClick={() => navigate('/homework')} className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold cursor-pointer">
                   Assign Task
                 </button>
               </div>

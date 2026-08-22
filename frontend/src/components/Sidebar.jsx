@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }) {
   const { user } = useAuth();
   const role = user?.role || 'admin';
   const profileId = user?.profileId?._id || user?.profileId || 'profile';
@@ -78,61 +78,60 @@ export default function Sidebar() {
       icon: CalendarDays,
       roles: ['admin', 'teacher', 'student'],
     },
+    { label: 'Timetable', path: getRolePath('timetable'), icon: Clock, roles: ['admin', 'teacher', 'student'] },
     {
-      label: role === 'student' ? 'My Class Timetable' : 'Timetable',
-      path: getRolePath('timetable'),
-      icon: Clock,
-      roles: ['admin', 'teacher', 'student'],
-    },
-    {
-      label: role === 'student' ? 'My Results & Grades' : 'Exams & Results',
+      label: role === 'student' ? 'Exams & Report Cards' : 'Exams & Results',
       path: getRolePath('exams'),
       icon: Award,
       roles: ['admin', 'teacher', 'student'],
     },
+    { label: 'Homework', path: getRolePath('homework'), icon: BookMarked, roles: ['admin', 'teacher', 'student'] },
     {
-      label: role === 'student' ? 'My Homework Tasks' : 'Homework',
-      path: getRolePath('homework'),
-      icon: FileSpreadsheet,
-      roles: ['admin', 'teacher', 'student'],
-    },
-    {
-      label: role === 'student' ? 'My Study Materials' : 'Study Material',
+      label: 'Study Material',
       path: getRolePath('study-materials'),
       icon: BookOpen,
-      roles: ['teacher', 'student'],
-    },
-    {
-      label: role === 'student' ? 'My Fee Balance' : 'Fee Management',
-      path: getRolePath('fees'),
-      icon: DollarSign,
-      roles: ['admin', 'student'],
+      roles: ['admin', 'teacher', 'student'],
     },
 
-    { label: 'Admissions Pipeline', path: getRolePath('admissions'), icon: UserPlus, roles: ['admin'] },
+    { label: 'Fees Management', path: getRolePath('fees'), icon: DollarSign, roles: ['admin', 'student'] },
+    { label: 'Admissions', path: '/admin/admissions', icon: UserPlus, roles: ['admin'] },
     { label: 'Notices Board', path: getRolePath('notices'), icon: Bell, roles: ['admin', 'teacher', 'student'] },
     { label: 'School Calendar', path: getRolePath('calendar'), icon: Calendar, roles: ['admin', 'teacher', 'student'] },
-    { label: 'Leave Requests', path: getRolePath('leave'), icon: Clock, roles: ['admin', 'teacher', 'student'] },
-    { label: 'Reports Suite', path: getRolePath('reports'), icon: BarChart3, roles: ['admin'] },
-    { label: 'Audit Logs', path: getRolePath('audit-logs'), icon: ShieldCheck, roles: ['admin'] },
+    { label: 'Leave Requests', path: getRolePath('leave'), icon: CalendarDays, roles: ['admin', 'teacher', 'student'] },
+    { label: 'Library', path: '/admin/library', icon: BookOpen, roles: ['admin'] },
+    { label: 'Transport', path: '/admin/transport', icon: Bus, roles: ['admin'] },
+    { label: 'Reports & Analytics', path: '/admin/reports', icon: BarChart3, roles: ['admin'] },
+    { label: 'Audit Logs', path: '/admin/audit-logs', icon: ShieldCheck, roles: ['admin'] },
     { label: 'Settings & Security', path: getRolePath('settings'), icon: Settings, roles: ['admin', 'teacher', 'student'] },
   ];
 
   const filteredMenu = menuItems.filter((item) => item.roles.includes(role));
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 min-h-screen flex flex-col shadow-2xl border-r border-slate-800 shrink-0">
+    <aside className="w-64 bg-slate-900 text-slate-300 min-h-screen flex flex-col shadow-2xl border-r border-slate-800 shrink-0 h-full">
       {/* Brand Header */}
-      <div className="p-5 flex items-center gap-3 border-b border-slate-800/80 bg-slate-950/40">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-sky-400 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-500/20">
-          G
+      <div className="p-5 flex items-center justify-between border-b border-slate-800/80 bg-slate-950/40">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-sky-400 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-500/20">
+            G
+          </div>
+          <div>
+            <h1 className="font-bold text-white tracking-wide text-base leading-tight">Greenwood ERP</h1>
+            <p className="text-[10px] text-indigo-400 font-semibold uppercase tracking-wider">
+              {role === 'admin' ? 'Principal Portal' : role === 'teacher' ? 'Faculty Portal' : 'Student Portal'}
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="font-bold text-white tracking-wide text-base leading-tight">Greenwood ERP</h1>
-          <p className="text-[10px] text-indigo-400 font-semibold uppercase tracking-wider">
-            {role === 'admin' ? 'Principal Portal' : role === 'teacher' ? 'Faculty Portal' : 'Student Portal'}
-          </p>
-        </div>
+
+        {/* Mobile Close Button */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="lg:hidden p-1 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+          >
+            <span className="text-lg font-bold">✕</span>
+          </button>
+        )}
       </div>
 
       {/* Navigation Links */}
@@ -141,6 +140,7 @@ export default function Sidebar() {
           <NavLink
             key={item.path}
             to={item.path}
+            onClick={() => onClose && onClose()}
             className={({ isActive }) =>
               `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
                 isActive

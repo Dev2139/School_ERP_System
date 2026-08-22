@@ -6,7 +6,7 @@ import { ShieldCheck, LogIn, Sparkles, UserCheck, GraduationCap, Building2, Chev
 
 export default function Login() {
   const [email, setEmail] = useState('principal@school.com');
-  const [password, setPassword] = useState('Admin@123');
+  const [password, setPassword] = useState('06102006');
   const [selectedRole, setSelectedRole] = useState('principal');
   const [loading, setLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -52,21 +52,21 @@ export default function Login() {
       id: 'principal',
       label: 'Principal',
       email: 'principal@school.com',
-      pass: 'Admin@123',
+      pass: '06102006',
       icon: Building2,
     },
     {
       id: 'teacher',
       label: 'Teacher',
       email: 'manu@gmail.com',
-      pass: 'Admin@123',
+      pass: '06102006',
       icon: UserCheck,
     },
     {
       id: 'student',
       label: 'Student',
       email: 'student@school.com',
-      pass: 'Student@123',
+      pass: '06102006',
       icon: GraduationCap,
     },
   ];
