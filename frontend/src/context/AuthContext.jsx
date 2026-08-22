@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('refreshToken', refreshToken);
         setUser(userData);
         setProfile(userData.profile);
-        return { success: true };
+        return { success: true, user: userData };
       }
     } catch (err) {
       return {

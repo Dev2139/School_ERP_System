@@ -28,17 +28,24 @@ import { useAuth } from '../context/AuthContext';
 export default function Sidebar() {
   const { user } = useAuth();
   const role = user?.role || 'admin';
-  const profileId = user?.profileId?._id || user?.profileId;
+  const profileId = user?.profileId?._id || user?.profileId || 'profile';
 
-  // Role-prefixed route generator
+  // Role-prefixed route generator with ID routing for Student & Teacher
   const getRolePath = (subPath) => {
-    const rolePrefix = role === 'admin' ? '/admin' : role === 'teacher' ? '/teacher' : '/student';
+    const profileIdStr = profileId;
 
-    if (subPath === 'sections') {
-      if (role === 'student') return `/student/${profileId || 'my'}/section`;
-      return `${rolePrefix}/sections`;
+    if (role === 'student') {
+      if (subPath === 'sections' || subPath === 'section') {
+        return `/student/${profileIdStr}/section`;
+      }
+      return `/student/${profileIdStr}/${subPath}`;
     }
-    return `${rolePrefix}/${subPath}`;
+
+    if (role === 'teacher') {
+      return `/teacher/${profileIdStr}/${subPath}`;
+    }
+
+    return `/admin/${subPath}`;
   };
 
   const menuItems = [
@@ -47,7 +54,7 @@ export default function Sidebar() {
     // Student Class & Section Profile
     {
       label: 'My Class & Section',
-      path: `/student/${profileId || 'profile'}/section`,
+      path: `/student/${profileId}/section`,
       icon: Layers,
       roles: ['student'],
     },
@@ -59,7 +66,11 @@ export default function Sidebar() {
 
     // Academic Sections Management
     { label: 'Academic Setup', path: '/admin/sections', icon: BookOpen, roles: ['admin'] },
-    { label: 'My Sections & Classes', path: '/teacher/sections', icon: Layers, roles: ['teacher'] },
+    { label: 'My Sections & Classes', path: getRolePath('sections'), icon: Layers, roles: ['teacher'] },
+
+    // Faculty Salary Management
+    { label: 'Faculty Payroll', path: '/admin/salary', icon: DollarSign, roles: ['admin'] },
+    { label: 'My Salary & Payslips', path: getRolePath('salary'), icon: DollarSign, roles: ['teacher'] },
 
     {
       label: role === 'student' ? 'My Attendance' : 'Attendance',

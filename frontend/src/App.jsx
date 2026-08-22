@@ -22,11 +22,13 @@ import LeaveManager from './pages/LeaveManager';
 import ReportsManager from './pages/ReportsManager';
 import AuditLogViewer from './pages/AuditLogViewer';
 import SettingsPage from './pages/SettingsPage';
+import SalaryManager from './pages/SalaryManager';
 
 function RoleRoute({ roles, children }) {
   const { user } = useAuth();
   if (!roles.includes(user?.role)) {
-    const rolePrefix = user?.role === 'admin' ? '/admin' : user?.role === 'teacher' ? '/teacher' : '/student';
+    const profileId = user?.profileId?._id || user?.profileId || 'profile';
+    const rolePrefix = user?.role === 'admin' ? '/admin' : user?.role === 'teacher' ? `/teacher/${profileId}` : `/student/${profileId}`;
     return <Navigate to={`${rolePrefix}/dashboard`} replace />;
   }
   return children;
@@ -35,9 +37,11 @@ function RoleRoute({ roles, children }) {
 // Redirect helper for root alias paths to role-prefixed paths
 function RoleRedirect({ subPath }) {
   const { user } = useAuth();
-  const rolePrefix = user?.role === 'admin' ? '/admin' : user?.role === 'teacher' ? '/teacher' : '/student';
+  const profileId = user?.profileId?._id || user?.profileId || 'profile';
+  const rolePrefix = user?.role === 'admin' ? '/admin' : user?.role === 'teacher' ? `/teacher/${profileId}` : `/student/${profileId}`;
+
   const targetPath = subPath === 'sections' && user?.role === 'student'
-    ? `/student/${user?.profileId?._id || user?.profileId || 'profile'}/section`
+    ? `/student/${profileId}/section`
     : `${rolePrefix}/${subPath}`;
   return <Navigate to={targetPath} replace />;
 }
@@ -63,7 +67,8 @@ export default function App() {
     );
   }
 
-  const rolePrefix = user?.role === 'admin' ? '/admin' : user?.role === 'teacher' ? '/teacher' : '/student';
+  const profileId = user?.profileId?._id || user?.profileId || 'profile';
+  const rolePrefix = user?.role === 'admin' ? '/admin' : user?.role === 'teacher' ? `/teacher/${profileId}` : `/student/${profileId}`;
 
   return (
     <Routes>
@@ -201,6 +206,14 @@ export default function App() {
           }
         />
         <Route
+          path="admin/salary"
+          element={
+            <RoleRoute roles={['admin']}>
+              <SalaryManager />
+            </RoleRoute>
+          }
+        />
+        <Route
           path="admin/settings"
           element={
             <RoleRoute roles={['admin']}>
@@ -209,9 +222,9 @@ export default function App() {
           }
         />
 
-        {/* ---------------- TEACHER ROUTES ---------------- */}
+        {/* ---------------- TEACHER ROUTES (WITH TEACHER ID IN EVERY SECTION) ---------------- */}
         <Route
-          path="teacher/dashboard"
+          path="teacher/:id/dashboard"
           element={
             <RoleRoute roles={['teacher']}>
               <Dashboard />
@@ -219,7 +232,7 @@ export default function App() {
           }
         />
         <Route
-          path="teacher/sections"
+          path="teacher/:id/sections"
           element={
             <RoleRoute roles={['teacher']}>
               <AcademicList />
@@ -227,7 +240,7 @@ export default function App() {
           }
         />
         <Route
-          path="teacher/students"
+          path="teacher/:id/students"
           element={
             <RoleRoute roles={['teacher']}>
               <StudentList />
@@ -235,7 +248,7 @@ export default function App() {
           }
         />
         <Route
-          path="teacher/study-materials"
+          path="teacher/:id/study-materials"
           element={
             <RoleRoute roles={['teacher']}>
               <StudyMaterialManager />
@@ -243,7 +256,7 @@ export default function App() {
           }
         />
         <Route
-          path="teacher/attendance"
+          path="teacher/:id/attendance"
           element={
             <RoleRoute roles={['teacher']}>
               <AttendanceManager />
@@ -251,7 +264,7 @@ export default function App() {
           }
         />
         <Route
-          path="teacher/timetable"
+          path="teacher/:id/timetable"
           element={
             <RoleRoute roles={['teacher']}>
               <TimetableManager />
@@ -259,7 +272,7 @@ export default function App() {
           }
         />
         <Route
-          path="teacher/exams"
+          path="teacher/:id/exams"
           element={
             <RoleRoute roles={['teacher']}>
               <ExamManager />
@@ -267,7 +280,7 @@ export default function App() {
           }
         />
         <Route
-          path="teacher/homework"
+          path="teacher/:id/homework"
           element={
             <RoleRoute roles={['teacher']}>
               <HomeworkManager />
@@ -275,7 +288,7 @@ export default function App() {
           }
         />
         <Route
-          path="teacher/notices"
+          path="teacher/:id/notices"
           element={
             <RoleRoute roles={['teacher']}>
               <NoticeManager />
@@ -283,7 +296,7 @@ export default function App() {
           }
         />
         <Route
-          path="teacher/calendar"
+          path="teacher/:id/calendar"
           element={
             <RoleRoute roles={['teacher']}>
               <CalendarView />
@@ -291,7 +304,7 @@ export default function App() {
           }
         />
         <Route
-          path="teacher/leave"
+          path="teacher/:id/leave"
           element={
             <RoleRoute roles={['teacher']}>
               <LeaveManager />
@@ -299,7 +312,15 @@ export default function App() {
           }
         />
         <Route
-          path="teacher/settings"
+          path="teacher/:id/salary"
+          element={
+            <RoleRoute roles={['teacher']}>
+              <SalaryManager />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="teacher/:id/settings"
           element={
             <RoleRoute roles={['teacher']}>
               <SettingsPage />
@@ -307,9 +328,24 @@ export default function App() {
           }
         />
 
-        {/* ---------------- STUDENT ROUTES ---------------- */}
+        {/* LEGACY & DIRECT TEACHER ALIASES (Redirects to /teacher/:id/subPath) */}
+        <Route path="teacher/dashboard" element={<RoleRedirect subPath="dashboard" />} />
+        <Route path="teacher/sections" element={<RoleRedirect subPath="sections" />} />
+        <Route path="teacher/students" element={<RoleRedirect subPath="students" />} />
+        <Route path="teacher/salary" element={<RoleRedirect subPath="salary" />} />
+        <Route path="teacher/study-materials" element={<RoleRedirect subPath="study-materials" />} />
+        <Route path="teacher/attendance" element={<RoleRedirect subPath="attendance" />} />
+        <Route path="teacher/timetable" element={<RoleRedirect subPath="timetable" />} />
+        <Route path="teacher/exams" element={<RoleRedirect subPath="exams" />} />
+        <Route path="teacher/homework" element={<RoleRedirect subPath="homework" />} />
+        <Route path="teacher/notices" element={<RoleRedirect subPath="notices" />} />
+        <Route path="teacher/calendar" element={<RoleRedirect subPath="calendar" />} />
+        <Route path="teacher/leave" element={<RoleRedirect subPath="leave" />} />
+        <Route path="teacher/settings" element={<RoleRedirect subPath="settings" />} />
+
+        {/* ---------------- STUDENT ROUTES (WITH STUDENT ID IN EVERY SECTION) ---------------- */}
         <Route
-          path="student/dashboard"
+          path="student/:id/dashboard"
           element={
             <RoleRoute roles={['student']}>
               <Dashboard />
@@ -325,7 +361,7 @@ export default function App() {
           }
         />
         <Route
-          path="student/study-materials"
+          path="student/:id/study-materials"
           element={
             <RoleRoute roles={['student']}>
               <StudyMaterialManager />
@@ -333,7 +369,7 @@ export default function App() {
           }
         />
         <Route
-          path="student/attendance"
+          path="student/:id/attendance"
           element={
             <RoleRoute roles={['student']}>
               <AttendanceManager />
@@ -341,7 +377,7 @@ export default function App() {
           }
         />
         <Route
-          path="student/timetable"
+          path="student/:id/timetable"
           element={
             <RoleRoute roles={['student']}>
               <TimetableManager />
@@ -349,7 +385,7 @@ export default function App() {
           }
         />
         <Route
-          path="student/exams"
+          path="student/:id/exams"
           element={
             <RoleRoute roles={['student']}>
               <ExamManager />
@@ -357,7 +393,7 @@ export default function App() {
           }
         />
         <Route
-          path="student/homework"
+          path="student/:id/homework"
           element={
             <RoleRoute roles={['student']}>
               <HomeworkManager />
@@ -365,7 +401,7 @@ export default function App() {
           }
         />
         <Route
-          path="student/fees"
+          path="student/:id/fees"
           element={
             <RoleRoute roles={['student']}>
               <FeeManager />
@@ -373,7 +409,7 @@ export default function App() {
           }
         />
         <Route
-          path="student/notices"
+          path="student/:id/notices"
           element={
             <RoleRoute roles={['student']}>
               <NoticeManager />
@@ -381,7 +417,7 @@ export default function App() {
           }
         />
         <Route
-          path="student/calendar"
+          path="student/:id/calendar"
           element={
             <RoleRoute roles={['student']}>
               <CalendarView />
@@ -389,7 +425,7 @@ export default function App() {
           }
         />
         <Route
-          path="student/leave"
+          path="student/:id/leave"
           element={
             <RoleRoute roles={['student']}>
               <LeaveManager />
@@ -397,7 +433,7 @@ export default function App() {
           }
         />
         <Route
-          path="student/settings"
+          path="student/:id/settings"
           element={
             <RoleRoute roles={['student']}>
               <SettingsPage />
@@ -405,9 +441,21 @@ export default function App() {
           }
         />
 
+        {/* LEGACY & DIRECT STUDENT ALIASES (Redirects to /student/:id/subPath) */}
+        <Route path="student/dashboard" element={<RoleRedirect subPath="dashboard" />} />
+        <Route path="student/study-materials" element={<RoleRedirect subPath="study-materials" />} />
+        <Route path="student/attendance" element={<RoleRedirect subPath="attendance" />} />
+        <Route path="student/timetable" element={<RoleRedirect subPath="timetable" />} />
+        <Route path="student/exams" element={<RoleRedirect subPath="exams" />} />
+        <Route path="student/homework" element={<RoleRedirect subPath="homework" />} />
+        <Route path="student/fees" element={<RoleRedirect subPath="fees" />} />
+        <Route path="student/notices" element={<RoleRedirect subPath="notices" />} />
+        <Route path="student/calendar" element={<RoleRedirect subPath="calendar" />} />
+        <Route path="student/leave" element={<RoleRedirect subPath="leave" />} />
+        <Route path="student/settings" element={<RoleRedirect subPath="settings" />} />
+
         {/* LEGACY / ROOT ALIAS REDIRECTS */}
         <Route path="dashboard" element={<RoleRedirect subPath="dashboard" />} />
-        <Route path="academics font-mono" element={<RoleRedirect subPath="sections" />} />
         <Route path="academics" element={<RoleRedirect subPath="sections" />} />
         <Route path="sections" element={<RoleRedirect subPath="sections" />} />
         <Route path="students" element={<RoleRedirect subPath="students" />} />

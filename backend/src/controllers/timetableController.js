@@ -94,6 +94,7 @@ exports.getTimetable = async (req, res, next) => {
 exports.saveTimetable = async (req, res, next) => {
   try {
     const { academicYearId, classId, sectionId, slots } = req.body;
+    const schoolId = req.user.schoolId;
 
     // Auto-detect teacher strictly matching subjectId without random fallbacks
     for (const slot of slots) {
@@ -101,12 +102,12 @@ exports.saveTimetable = async (req, res, next) => {
         const subjectDoc = await Subject.findById(slot.subjectId);
         if (subjectDoc) {
           let matchedTeacher = await Teacher.findOne({
-            schoolId: req.user.schoolId,
+            schoolId,
             subjects: slot.subjectId,
           });
           if (!matchedTeacher) {
             matchedTeacher = await Teacher.findOne({
-              schoolId: req.user.schoolId,
+              schoolId,
               qualification: new RegExp(subjectDoc.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
             });
           }
@@ -119,28 +120,65 @@ exports.saveTimetable = async (req, res, next) => {
       }
     }
 
-    // Conflict Check: ensure teacher isn't double-booked at same day & period Number in ANOTHER class
-    for (const slot of slots) {
-      if (!slot.teacherId) continue;
-      const existingConflict = await Timetable.findOne({
-        schoolId: req.user.schoolId,
-        classId: { $ne: classId },
-        'slots.day': slot.day,
-        'slots.periodNumber': slot.periodNumber,
-        'slots.teacherId': slot.teacherId,
-      });
+    // Comprehensive Conflict Validation: Teacher Double-Booking & Room Occupation
+    const allTimetables = await Timetable.find({
+      schoolId,
+      $or: [{ classId: { $ne: classId } }, { sectionId: { $ne: sectionId } }],
+    })
+      .populate('classId', 'name')
+      .populate('sectionId', 'name')
+      .populate('slots.teacherId', 'name');
 
-      if (existingConflict) {
-        return res.status(400).json({
-          success: false,
-          message: `Scheduling Conflict: Teacher is already assigned to another class on ${slot.day} Period ${slot.periodNumber}`,
-        });
+    const conflicts = [];
+
+    for (const slot of slots) {
+      const { day, periodNumber, teacherId, classroom } = slot;
+
+      for (const otherTT of allTimetables) {
+        const targetClassName = `${otherTT.classId?.name || 'Class'} - ${otherTT.sectionId?.name || 'Section'}`;
+
+        for (const otherSlot of otherTT.slots) {
+          if (otherSlot.day === day && Number(otherSlot.periodNumber) === Number(periodNumber)) {
+            // 1. Teacher Conflict Check
+            if (teacherId && otherSlot.teacherId) {
+              const otherTeacherIdStr = otherSlot.teacherId._id?.toString() || otherSlot.teacherId.toString();
+              const teacherIdStr = teacherId._id?.toString() || teacherId.toString();
+
+              if (otherTeacherIdStr === teacherIdStr) {
+                const teacherName = otherSlot.teacherId.name || 'Teacher';
+                conflicts.push(
+                  `Teacher Conflict: ${teacherName} is already teaching ${targetClassName} on ${day} Period ${periodNumber}`
+                );
+              }
+            }
+
+            // 2. Room Occupation Conflict Check
+            if (classroom && otherSlot.classroom) {
+              const currentRoom = classroom.trim().toLowerCase();
+              const otherRoom = otherSlot.classroom.trim().toLowerCase();
+
+              if (currentRoom === otherRoom && currentRoom !== 'unassigned') {
+                conflicts.push(
+                  `Room Conflict: ${classroom} is already occupied by ${targetClassName} on ${day} Period ${periodNumber}`
+                );
+              }
+            }
+          }
+        }
       }
     }
 
+    if (conflicts.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: conflicts.join(' | '),
+        conflicts,
+      });
+    }
+
     const timetable = await Timetable.findOneAndUpdate(
-      { schoolId: req.user.schoolId, classId, sectionId },
-      { schoolId: req.user.schoolId, academicYearId, classId, sectionId, slots },
+      { schoolId, classId, sectionId },
+      { schoolId, academicYearId, classId, sectionId, slots },
       { upsert: true, new: true }
     )
       .populate('slots.subjectId', 'name code')
@@ -155,37 +193,63 @@ exports.saveTimetable = async (req, res, next) => {
 
 exports.checkConflict = async (req, res, next) => {
   try {
-    const { teacherId, day, periodNumber, classId } = req.query;
-    if (!teacherId || !day || !periodNumber) {
-      return res.status(200).json({ success: true, hasConflict: false });
+    const { teacherId, classroom, day, periodNumber, classId, sectionId } = req.query;
+    const schoolId = req.user.schoolId;
+
+    if (!day || !periodNumber) {
+      return res.status(200).json({ success: true, hasConflict: false, conflicts: [] });
     }
 
-    const conflict = await Timetable.findOne({
-      schoolId: req.user.schoolId,
-      classId: { $ne: classId },
-      'slots.day': day,
-      'slots.periodNumber': parseInt(periodNumber),
-      'slots.teacherId': teacherId,
+    const otherTimetables = await Timetable.find({
+      schoolId,
+      $or: [{ classId: { $ne: classId } }, { sectionId: { $ne: sectionId } }],
     })
       .populate('classId', 'name')
       .populate('sectionId', 'name')
       .populate('slots.teacherId', 'name');
 
-    if (conflict) {
-      const conflictingClassName = `${conflict.classId?.name || 'Class'} - ${conflict.sectionId?.name || 'Section'}`;
-      const teacherObj = conflict.slots.find((s) => s.teacherId?._id?.toString() === teacherId.toString())?.teacherId;
-      const teacherName = teacherObj?.name || 'Teacher';
+    const conflicts = [];
+    let teacherConflict = null;
+    let roomConflict = null;
 
-      return res.status(200).json({
-        success: true,
-        hasConflict: true,
-        conflictingClass: conflictingClassName,
-        teacherName,
-        message: `Scheduling Conflict: ${teacherName} is already assigned to ${conflictingClassName} on ${day} Period ${periodNumber}`,
-      });
+    const currentPeriod = Number(periodNumber);
+    const targetRoom = classroom ? classroom.trim().toLowerCase() : '';
+
+    for (const tt of otherTimetables) {
+      const className = `${tt.classId?.name || 'Class'} - ${tt.sectionId?.name || 'Section'}`;
+
+      for (const slot of tt.slots) {
+        if (slot.day === day && Number(slot.periodNumber) === currentPeriod) {
+          // Check Teacher Conflict
+          if (teacherId && slot.teacherId) {
+            const slotTeacherId = slot.teacherId._id?.toString() || slot.teacherId.toString();
+            if (slotTeacherId === teacherId.toString()) {
+              const teacherName = slot.teacherId.name || 'Teacher';
+              teacherConflict = `Teacher Conflict: ${teacherName} is already assigned to ${className} on ${day} Period ${periodNumber}`;
+              conflicts.push(teacherConflict);
+            }
+          }
+
+          // Check Room Conflict
+          if (targetRoom && slot.classroom) {
+            const slotRoom = slot.classroom.trim().toLowerCase();
+            if (slotRoom === targetRoom && slotRoom !== 'unassigned') {
+              roomConflict = `Room Conflict: ${classroom} is already occupied by ${className} on ${day} Period ${periodNumber}`;
+              conflicts.push(roomConflict);
+            }
+          }
+        }
+      }
     }
 
-    res.status(200).json({ success: true, hasConflict: false });
+    res.status(200).json({
+      success: true,
+      hasConflict: conflicts.length > 0,
+      teacherConflict,
+      roomConflict,
+      conflicts,
+      message: conflicts.join(' | '),
+    });
   } catch (error) {
     next(error);
   }

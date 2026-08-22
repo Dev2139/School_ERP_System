@@ -58,8 +58,8 @@ export default function Login() {
     {
       id: 'teacher',
       label: 'Teacher',
-      email: 'teacher@school.com',
-      pass: 'Teacher@123',
+      email: 'manu@gmail.com',
+      pass: 'Admin@123',
       icon: UserCheck,
     },
     {
@@ -85,7 +85,9 @@ export default function Login() {
 
     if (res?.success) {
       addToast('Welcome back to Greenwood ERP!', 'success');
-      navigate('/dashboard');
+      const profileId = res.user?.profileId?._id || res.user?.profileId || 'profile';
+      const rolePrefix = res.user?.role === 'admin' ? '/admin' : res.user?.role === 'teacher' ? `/teacher/${profileId}` : `/student/${profileId}`;
+      navigate(`${rolePrefix}/dashboard`);
     } else {
       addToast(res?.message || 'Login failed. Check credentials.', 'error');
     }

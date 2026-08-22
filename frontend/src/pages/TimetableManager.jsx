@@ -3,7 +3,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import Modal from '../components/Modal';
-import { Clock, Calendar, Shield, GraduationCap, CheckCircle2, AlertCircle, Plus, Edit3, UserCheck, BookOpen, Save } from 'lucide-react';
+import { Clock, Calendar, Shield, GraduationCap, CheckCircle2, AlertCircle, Plus, Edit3, UserCheck, BookOpen, Save, AlertTriangle } from 'lucide-react';
 
 export default function TimetableManager() {
   const { user } = useAuth();
@@ -187,21 +187,21 @@ export default function TimetableManager() {
     slotDateObj.setHours(0,0,0,0);
 
     if (slotDateObj > selectedDateObj) {
-      return 'bg-slate-50 text-slate-500 border-slate-200'; // Future
+      return 'bg-slate-50 text-slate-500 border-slate-200';
     }
 
     const status = attendanceMap[dateStr];
     if (status === 'present' || status === 'late' || status === 'filled') {
-      return 'bg-emerald-50 text-emerald-700 border-emerald-300 font-black'; // Green: Filled / Present
+      return 'bg-emerald-50 text-emerald-700 border-emerald-300 font-black';
     }
     if (status === 'absent') {
-      return 'bg-rose-50 text-rose-600 border-rose-300 font-black'; // Red: Absent
+      return 'bg-rose-50 text-rose-600 border-rose-300 font-black';
     }
     if (status === 'leave') {
-      return 'bg-amber-50 text-amber-700 border-amber-300 font-black'; // Leave
+      return 'bg-amber-50 text-amber-700 border-amber-300 font-black';
     }
 
-    return 'bg-sky-50 text-sky-700 border-sky-300 font-black'; // Blue: No Attendance Taken
+    return 'bg-sky-50 text-sky-700 border-sky-300 font-black';
   };
 
   // Open Edit Slot Modal for Principal
@@ -212,7 +212,6 @@ export default function TimetableManager() {
     const selectedSubjObj = subjectsList.find((s) => s._id === defaultSubjId);
     const subjName = selectedSubjObj?.name?.toLowerCase() || '';
 
-    // Strictly find teacher assigned to this subject (NO random fallback!)
     const qualified = teachersList.filter((t) => {
       if (!subjName) return false;
       const subMatch = t.subjects && t.subjects.some((s) => {
@@ -225,6 +224,7 @@ export default function TimetableManager() {
     });
 
     const initialTeacherId = existingSlot?.teacherId?._id || existingSlot?.teacherId || (qualified.length > 0 ? qualified[0]._id : '');
+    const initialClassroom = existingSlot?.classroom || 'Room 101';
 
     setSlotForm({
       day: dayName,
@@ -234,27 +234,31 @@ export default function TimetableManager() {
       endTime: periodObj.endTime || '10:15 AM',
       subjectId: defaultSubjId,
       teacherId: initialTeacherId,
-      classroom: existingSlot?.classroom || 'Room 101',
+      classroom: initialClassroom,
     });
     setConflictWarning(null);
     setIsEditModalOpen(true);
 
-    if (initialTeacherId) {
-      checkConflictForTeacher(initialTeacherId, dayName, periodObj.period);
-    }
+    checkSlotConflict(initialTeacherId, initialClassroom, dayName, periodObj.period);
   };
 
-  const checkConflictForTeacher = async (teacherId, day, periodNumber) => {
-    if (!teacherId) {
+  // Real-time Teacher & Room Conflict Checker
+  const checkSlotConflict = async (teacherId, classroom, day, periodNumber) => {
+    if ((!teacherId && !classroom) || !day || !periodNumber) {
       setConflictWarning(null);
       return;
     }
     try {
       const res = await api.get(
-        `/timetable/check-conflict?teacherId=${teacherId}&day=${day}&periodNumber=${periodNumber}&classId=${selectedClass}`
+        `/timetable/check-conflict?teacherId=${teacherId || ''}&classroom=${encodeURIComponent(classroom || '')}&day=${day}&periodNumber=${periodNumber}&classId=${selectedClass}&sectionId=${selectedSection}`
       );
       if (res.data.success && res.data.hasConflict) {
-        setConflictWarning(res.data.message);
+        setConflictWarning({
+          message: res.data.message,
+          teacherConflict: res.data.teacherConflict,
+          roomConflict: res.data.roomConflict,
+          conflicts: res.data.conflicts || [],
+        });
       } else {
         setConflictWarning(null);
       }
@@ -285,11 +289,17 @@ export default function TimetableManager() {
       teacherId: nextTeacherId,
     }));
 
-    if (nextTeacherId) {
-      checkConflictForTeacher(nextTeacherId, slotForm.day, slotForm.periodNumber);
-    } else {
-      setConflictWarning(null);
-    }
+    checkSlotConflict(nextTeacherId, slotForm.classroom, slotForm.day, slotForm.periodNumber);
+  };
+
+  const handleTeacherChange = (newTeacherId) => {
+    setSlotForm((prev) => ({ ...prev, teacherId: newTeacherId }));
+    checkSlotConflict(newTeacherId, slotForm.classroom, slotForm.day, slotForm.periodNumber);
+  };
+
+  const handleClassroomChange = (newClassroom) => {
+    setSlotForm((prev) => ({ ...prev, classroom: newClassroom }));
+    checkSlotConflict(slotForm.teacherId, newClassroom, slotForm.day, slotForm.periodNumber);
   };
 
   // Save Slot Assignment by Principal
@@ -307,7 +317,6 @@ export default function TimetableManager() {
     setSavingSlot(true);
     try {
       const existingSlots = timetable?.slots ? [...timetable.slots] : [];
-      // Remove existing slot for this day & period if exists
       const filteredSlots = existingSlots.filter(
         (s) => !(s.day === slotForm.day && s.periodNumber === slotForm.periodNumber)
       );
@@ -324,7 +333,6 @@ export default function TimetableManager() {
 
       const rawSlotsPayload = [...filteredSlots, newSlot];
 
-      // Format ObjectIds cleanly
       const updatedSlotsPayload = rawSlotsPayload.map((s) => ({
         day: s.day,
         periodNumber: s.periodNumber,
@@ -348,7 +356,7 @@ export default function TimetableManager() {
         setIsEditModalOpen(false);
       }
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to update timetable slot', 'error');
+      addToast(err.response?.data?.message || 'Failed to update timetable slot due to scheduling conflicts', 'error');
     } finally {
       setSavingSlot(false);
     }
@@ -376,7 +384,7 @@ export default function TimetableManager() {
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-medium">
-                {isPrincipal && 'Principal Mode: Select class & assign teachers to period slots'}
+                {isPrincipal && 'Principal Mode: Real-time Teacher & Room conflict validation enabled'}
                 {isStudent && 'Student View: Locked to your enrolled class timetable & attendance colors'}
                 {isTeacher && 'Teacher View: Showing only periods assigned to your teaching schedule'}
               </p>
@@ -602,7 +610,7 @@ export default function TimetableManager() {
         </div>
       </div>
 
-      {/* PRINCIPAL SLOT ASSIGNMENT MODAL */}
+      {/* PRINCIPAL SLOT ASSIGNMENT MODAL WITH REAL-TIME TEACHER & ROOM CONFLICT VALIDATION */}
       {isPrincipal && (
         <Modal
           isOpen={isEditModalOpen}
@@ -614,21 +622,27 @@ export default function TimetableManager() {
               Class: <span className="font-bold text-slate-900">{selectedClassObj?.name} - {selectedSectionObj?.name}</span>
             </div>
 
-            {/* SCHEDULING CONFLICT WARNING ALERT */}
+            {/* REAL-TIME DUAL CONFLICT ALERT (TEACHER & ROOM) */}
             {conflictWarning && (
-              <div className="p-3.5 bg-rose-50 border-2 border-rose-300 rounded-2xl flex items-start gap-2.5 text-rose-900 shadow-xs">
-                <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-                <div>
-                  <div className="text-xs font-black uppercase text-rose-700 tracking-wider">
-                    Scheduling Conflict Warning
-                  </div>
-                  <div className="text-xs font-extrabold mt-0.5">
-                    {conflictWarning}
-                  </div>
-                  <div className="text-[11px] font-medium text-rose-600 mt-1">
-                    Assigning this teacher will double-book them at the same time in another class.
-                  </div>
+              <div className="p-3.5 bg-rose-50 border-2 border-rose-300 rounded-2xl space-y-2 text-rose-900 shadow-xs">
+                <div className="flex items-center gap-2 text-xs font-black uppercase text-rose-700 tracking-wider">
+                  <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+                  <span>Real-Time Scheduling Conflict Detected</span>
                 </div>
+
+                {conflictWarning.teacherConflict && (
+                  <div className="p-2 bg-white/80 rounded-xl border border-rose-200 text-xs font-bold text-rose-900 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-rose-600 shrink-0"></span>
+                    <span>{conflictWarning.teacherConflict}</span>
+                  </div>
+                )}
+
+                {conflictWarning.roomConflict && (
+                  <div className="p-2 bg-white/80 rounded-xl border border-amber-300 text-xs font-bold text-amber-900 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-600 shrink-0"></span>
+                    <span>{conflictWarning.roomConflict}</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -648,54 +662,23 @@ export default function TimetableManager() {
               </select>
             </div>
 
-            {/* AUTO-DETECTED TEACHER BADGE OR UNASSIGNED WARNING */}
-            {(() => {
-              const selectedSubjObj = subjectsList.find((s) => s._id === slotForm.subjectId);
-              const autoTeacher = teachersList.find((t) => (t._id || t).toString() === (slotForm.teacherId || '').toString());
-
-              if (autoTeacher) {
-                return (
-                  <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between shadow-xs">
-                    <div>
-                      <div className="text-[10px] font-extrabold uppercase text-emerald-700 tracking-wider">
-                        Assigned Subject Faculty Member
-                      </div>
-                      <div className="text-sm font-black text-slate-900 flex items-center gap-1.5 mt-0.5">
-                        <UserCheck className="w-4 h-4 text-emerald-600" />
-                        <span>{autoTeacher.name}</span>
-                      </div>
-                      {selectedSubjObj && (
-                        <div className="text-[11px] font-semibold text-slate-500 mt-0.5">
-                          Assigned for subject: <span className="font-bold text-slate-800">{selectedSubjObj.name}</span>
-                        </div>
-                      )}
-                    </div>
-                    <span className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-extrabold uppercase tracking-tight shadow-xs">
-                      Auto-Assigned
-                    </span>
-                  </div>
-                );
-              }
-
-              return (
-                <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between shadow-xs">
-                  <div>
-                    <div className="text-[10px] font-extrabold uppercase text-amber-700 tracking-wider">
-                      No Faculty Assigned to this Subject
-                    </div>
-                    <div className="text-xs font-bold text-amber-900 mt-0.5">
-                      No teacher in system is assigned to "{selectedSubjObj?.name || 'this subject'}"
-                    </div>
-                    <div className="text-[11px] font-medium text-amber-700 mt-0.5">
-                      Go to Teachers Directory to assign this subject to a faculty member.
-                    </div>
-                  </div>
-                  <span className="px-2.5 py-1 bg-amber-500 text-white rounded-lg text-[10px] font-extrabold uppercase tracking-tight shadow-xs">
-                    Unassigned
-                  </span>
-                </div>
-              );
-            })()}
+            {/* TEACHER ASSIGNMENT SELECTOR */}
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Assigned Faculty Member</label>
+              <select
+                required
+                value={slotForm.teacherId}
+                onChange={(e) => handleTeacherChange(e.target.value)}
+                className="w-full px-3 py-2 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">-- Select Teacher --</option>
+                {teachersList.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name} ({t.employeeId || 'Teacher'})
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Classroom / Lab Location</label>
@@ -703,7 +686,7 @@ export default function TimetableManager() {
                 type="text"
                 required
                 value={slotForm.classroom}
-                onChange={(e) => setSlotForm({ ...slotForm, classroom: e.target.value })}
+                onChange={(e) => handleClassroomChange(e.target.value)}
                 placeholder="e.g. Room 101 or Computer Lab 3"
                 className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
               />
@@ -719,8 +702,8 @@ export default function TimetableManager() {
               </button>
               <button
                 type="submit"
-                disabled={savingSlot}
-                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50"
+                disabled={savingSlot || Boolean(conflictWarning)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-md shadow-indigo-600/20 transition-all disabled:opacity-40 cursor-pointer"
               >
                 <Save className="w-4 h-4" />
                 <span>{savingSlot ? 'Saving Slot...' : 'Save Slot Assignment'}</span>
