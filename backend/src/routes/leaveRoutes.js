@@ -6,6 +6,6 @@ const { authenticateUser, authorizeRoles } = require('../middleware/authMiddlewa
 router.use(authenticateUser);
 router.get('/', leaveController.getLeaves);
 router.post('/', leaveController.createLeave);
-router.put('/:id/status', authorizeRoles('admin'), leaveController.updateLeaveStatus);
+router.put('/:id/status', authorizeRoles('admin', 'teacher'), leaveController.updateLeaveStatus);
 
 module.exports = router;
