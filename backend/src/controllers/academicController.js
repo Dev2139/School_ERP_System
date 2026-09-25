@@ -142,8 +142,15 @@ exports.createSubject = async (req, res, next) => {
 
 exports.getSubjects = async (req, res, next) => {
   try {
-    // If teacher role, return ONLY subjects assigned to this teacher!
-    if (req.user.role === 'teacher') {
+    const { classId, all } = req.query;
+    let filter = { schoolId: req.user.schoolId };
+
+    if (classId) {
+      filter.classId = classId;
+    }
+
+    // If teacher role AND NO classId or all query requested, return ONLY subjects assigned to this teacher
+    if (req.user.role === 'teacher' && !classId && !all) {
       const Teacher = require('../models/Teacher');
       const teacherDoc = await Teacher.findById(req.user.profileId);
       if (teacherDoc) {
@@ -155,13 +162,8 @@ exports.getSubjects = async (req, res, next) => {
           const sName = s.name ? s.name.toLowerCase() : '';
           const sTeacherId = s.teacherId?._id ? s.teacherId._id.toString() : s.teacherId ? s.teacherId.toString() : '';
 
-          // 1. Direct teacherId match on Subject
           const isDirectTeacher = sTeacherId === teacherDoc._id.toString();
-
-          // 2. Direct ObjectId match in teacher.subjects array
           const hasObjMatch = subjectIds.some((sub) => (sub._id || sub).toString() === s._id.toString());
-
-          // 3. Bi-directional name match between qualification & subject name
           const hasQualMatch = qualString.length > 0 && (sName.includes(qualString) || qualString.includes(sName));
 
           return isDirectTeacher || hasObjMatch || hasQualMatch;
@@ -171,7 +173,10 @@ exports.getSubjects = async (req, res, next) => {
       }
     }
 
-    const subjects = await Subject.find({ schoolId: req.user.schoolId }).populate('teacherId classId');
+    let subjects = await Subject.find(filter).populate('teacherId classId');
+    if (classId && subjects.length === 0) {
+      subjects = await Subject.find({ schoolId: req.user.schoolId }).populate('teacherId classId');
+    }
     res.status(200).json({ success: true, data: subjects });
   } catch (error) {
     next(error);

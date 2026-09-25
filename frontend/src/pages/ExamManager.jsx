@@ -88,6 +88,18 @@ export default function ExamManager() {
   }, [user, role]);
 
   useEffect(() => {
+    if (selectedClassId) {
+      api.get(`/academics/subjects?classId=${selectedClassId}`).then((res) => {
+        if (res.data.success) {
+          const subs = res.data.data || [];
+          setSubjectsList(subs);
+          if (subs.length > 0) {
+            setScheduleForm((prev) => ({ ...prev, subjectId: subs[0]._id }));
+          }
+        }
+      }).catch(console.error);
+    }
+
     if (selectedExamId) {
       if (isStudent) {
         fetchAdmitCardData(selectedExamId);
@@ -104,7 +116,7 @@ export default function ExamManager() {
     try {
       const [classRes, subRes] = await Promise.all([
         api.get('/academics/classes'),
-        api.get('/academics/subjects'),
+        api.get('/academics/subjects?all=true'),
       ]);
 
       if (classRes.data.success) {
@@ -236,7 +248,7 @@ export default function ExamManager() {
     try {
       const [stuRes, subRes, existingResultsRes] = await Promise.all([
         api.get(`/students?classId=${targetClassId}`),
-        api.get(`/academics/subjects`),
+        api.get(`/academics/subjects?classId=${targetClassId}`),
         api.get(`/exams/results?examinationId=${selectedExamId}&classId=${targetClassId}`),
       ]);
 
