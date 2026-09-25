@@ -18,6 +18,9 @@ import {
   ArrowRight,
   ShieldCheck,
   Building,
+  Settings,
+  Edit3,
+  Layers,
 } from 'lucide-react';
 
 export default function FeeManager() {
@@ -27,8 +30,17 @@ export default function FeeManager() {
   const isAccountant = ['accountant', 'admin', 'super_admin'].includes(user?.role);
   const isStudent = user?.role === 'student';
 
+  const [activeTab, setActiveTab] = useState('counter'); // 'counter' | 'standard-settings'
+
   const [studentFees, setStudentFees] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Standard-Wise Class Fee Settings State
+  const [classFeeSettings, setClassFeeSettings] = useState([]);
+  const [loadingSettings, setLoadingSettings] = useState(false);
+  const [editingClass, setEditingClass] = useState(null); // { classId, className, totalAmount, title }
+  const [newClassAmount, setNewClassAmount] = useState('');
+  const [updatingSetting, setUpdatingSetting] = useState(false);
 
   // Counter Lookup State
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,6 +56,9 @@ export default function FeeManager() {
 
   useEffect(() => {
     fetchStudentFees();
+    if (isAccountant) {
+      fetchClassFeeSettings();
+    }
   }, []);
 
   const fetchStudentFees = async () => {
@@ -61,6 +76,45 @@ export default function FeeManager() {
     }
   };
 
+  const fetchClassFeeSettings = async () => {
+    setLoadingSettings(true);
+    try {
+      const res = await api.get('/fees/standard-settings');
+      if (res.data.success) {
+        setClassFeeSettings(res.data.data || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingSettings(false);
+    }
+  };
+
+  const handleUpdateStandardFee = async (e) => {
+    e.preventDefault();
+    if (!editingClass || !newClassAmount) return;
+
+    setUpdatingSetting(true);
+    try {
+      const res = await api.post('/fees/standard-settings', {
+        classId: editingClass.classId,
+        totalAmount: Number(newClassAmount),
+        title: editingClass.title,
+      });
+
+      if (res.data.success) {
+        addToast(res.data.message || `Updated standard fee for ${editingClass.className}`, 'success');
+        setEditingClass(null);
+        fetchClassFeeSettings();
+        fetchStudentFees();
+      }
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to update standard fee setting', 'error');
+    } finally {
+      setUpdatingSetting(false);
+    }
+  };
+
   const handleStudentLookup = async (queryToSearch) => {
     const q = queryToSearch || searchQuery;
     if (!q || !q.trim()) {
@@ -72,13 +126,17 @@ export default function FeeManager() {
     try {
       const res = await api.get(`/fees/lookup?query=${encodeURIComponent(q.trim())}`);
       if (res.data.success) {
-        setActiveStudentPortal(res.data.data);
-        if (res.data.data.fees && res.data.data.fees.length > 0) {
-          const firstUnpaid = res.data.data.fees.find((f) => f.balanceAmount > 0) || res.data.data.fees[0];
+        const data = res.data.data;
+        setActiveStudentPortal(data);
+        if (data.fees && data.fees.length > 0) {
+          const firstUnpaid = data.fees.find((f) => f.balanceAmount > 0) || data.fees[0];
           setSelectedFee(firstUnpaid);
           setAmountPaid(String(firstUnpaid.balanceAmount || ''));
+        } else {
+          setSelectedFee(null);
+          setAmountPaid('');
         }
-        addToast(`Loaded Fee Account Portal for ${res.data.data.student.firstName} ${res.data.data.student.lastName}`, 'success');
+        addToast(`Loaded Fee Account Portal for ${data.student.firstName} ${data.student.lastName}`, 'success');
       }
     } catch (err) {
       addToast(err.response?.data?.message || 'Student fee account not found', 'error');
@@ -164,188 +222,296 @@ export default function FeeManager() {
             </h1>
             <p className="text-xs text-emerald-200 font-medium">
               {isAccountant
-                ? 'Lookup student fee portals by Email/ID, record cash/UPI counter payments, issue receipts, and manage class balances.'
+                ? 'Lookup student fee portals by Email/ID, record counter payments (Cash/UPI), issue receipts, and manage standard class fees.'
                 : 'Track your term fee breakdowns, view payment history, and check outstanding balances.'}
             </p>
           </div>
         </div>
 
         {isAccountant && (
-          <div className="px-4 py-2 bg-emerald-500/20 border border-emerald-400/30 rounded-2xl text-xs font-extrabold text-emerald-300 flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" /> Authorized Accounts Officer
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('counter')}
+              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer ${
+                activeTab === 'counter'
+                  ? 'bg-emerald-600 text-white shadow-md'
+                  : 'bg-white/10 text-slate-300 hover:bg-white/20'
+              }`}
+            >
+              Counter Collection
+            </button>
+            <button
+              onClick={() => setActiveTab('standard-settings')}
+              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'standard-settings'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'bg-white/10 text-slate-300 hover:bg-white/20'
+              }`}
+            >
+              <Settings className="w-3.5 h-3.5" /> Class Standard Fees
+            </button>
           </div>
         )}
       </div>
 
-      {/* ACCOUNTANT STUDENT LOOKUP BAR */}
-      {isAccountant && (
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-slate-800 font-extrabold text-sm uppercase tracking-wider">
-              <Search className="w-4 h-4 text-emerald-600" /> Student Counter Fee Portal Lookup
+      {/* TAB 1: COUNTER COLLECTION & LOOKUP */}
+      {activeTab === 'counter' && (
+        <>
+          {/* ACCOUNTANT STUDENT LOOKUP BAR */}
+          {isAccountant && (
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-slate-800 font-extrabold text-sm uppercase tracking-wider">
+                  <Search className="w-4 h-4 text-emerald-600" /> Student Counter Fee Portal Lookup
+                </div>
+                <span className="text-xs text-slate-400 font-semibold">Enter Student Email ID or Admission No</span>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleStudentLookup();
+                }}
+                className="flex flex-col sm:flex-row gap-3"
+              >
+                <div className="relative flex-1">
+                  <User className="w-5 h-5 text-slate-400 absolute left-3.5 top-3" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Enter Student Email (e.g. alex@school.com, dd@gmail.com) or Admission No..."
+                    className="w-full pl-11 pr-4 py-2.5 border border-slate-300 rounded-2xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={lookupLoading}
+                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
+                >
+                  <Search className="w-4 h-4" />
+                  <span>{lookupLoading ? 'Opening Portal...' : 'Open Student Fee Account'}</span>
+                </button>
+              </form>
             </div>
-            <span className="text-xs text-slate-400 font-semibold">Enter Student Email ID or Admission No</span>
+          )}
+
+          {/* METRIC OVERVIEW CARDS */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Collected Revenue</span>
+                <span className="text-2xl font-black text-emerald-600 mt-1 block">₹{totalCollected.toLocaleString()}</span>
+                <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-0.5 mt-1">
+                  <CheckCircle2 className="w-3 h-3" /> Credited Counter Payments
+                </span>
+              </div>
+              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
+                <DollarSign className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Outstanding Dues</span>
+                <span className="text-2xl font-black text-rose-600 mt-1 block">₹{totalOutstanding.toLocaleString()}</span>
+                <span className="text-[10px] font-semibold text-amber-600 mt-1 block">Pending Student Receivables</span>
+              </div>
+              <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Expected Fee Budget</span>
+                <span className="text-2xl font-black text-slate-900 mt-1 block">₹{totalExpected.toLocaleString()}</span>
+                <span className="text-[10px] font-semibold text-indigo-600 mt-1 block">Annual Academic Fee Pool</span>
+              </div>
+              <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
+                <CreditCard className="w-6 h-6" />
+              </div>
+            </div>
           </div>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleStudentLookup();
-            }}
-            className="flex flex-col sm:flex-row gap-3"
-          >
-            <div className="relative flex-1">
-              <User className="w-5 h-5 text-slate-400 absolute left-3.5 top-3" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Enter Student Email (e.g. alex@school.com, student@school.com) or Admission No..."
-                className="w-full pl-11 pr-4 py-2.5 border border-slate-300 rounded-2xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50"
-              />
+          {/* MASTER STUDENT FEES TABLE */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">
+                {isAccountant ? 'Student Academic Fee Ledgers' : 'My Fee Payment History'}
+              </h2>
+              <span className="text-xs text-slate-400 font-semibold">{studentFees.length} Total Student Records</span>
             </div>
-            <button
-              type="submit"
-              disabled={lookupLoading}
-              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-2xl text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
-            >
-              <Search className="w-4 h-4" />
-              <span>{lookupLoading ? 'Opening Portal...' : 'Open Student Fee Account'}</span>
-            </button>
-          </form>
+
+            {loading ? (
+              <div className="p-12 text-center text-slate-400 font-bold text-xs">Loading fee accounts...</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    <tr>
+                      <th className="py-3 px-4">Student Name</th>
+                      <th className="py-3 px-4">Fee Head / Structure</th>
+                      <th className="py-3 px-4 text-right">Net Fee</th>
+                      <th className="py-3 px-4 text-right">Amount Paid</th>
+                      <th className="py-3 px-4 text-right">Balance Due</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4 text-right">Counter Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                    {studentFees.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-12 text-center text-slate-400">
+                          No student fee accounts found.
+                        </td>
+                      </tr>
+                    ) : (
+                      studentFees.map((f) => (
+                        <tr key={f._id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="py-3.5 px-4 font-black text-slate-900">
+                            {f.studentId?.firstName} {f.studentId?.lastName}
+                            <span className="block text-[10px] text-slate-400 font-mono">
+                              Adm: {f.studentId?.admissionNumber || 'ADM-2026'}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-indigo-700 font-bold">
+                            {f.feeStructureId?.title || 'Annual Academic Fee'}
+                          </td>
+                          <td className="py-3.5 px-4 text-right text-slate-700 font-mono">₹{(f.netAmount || 0).toLocaleString()}</td>
+                          <td className="py-3.5 px-4 text-right text-emerald-600 font-mono font-bold">₹{(f.paidAmount || 0).toLocaleString()}</td>
+                          <td className={`py-3.5 px-4 text-right font-mono font-black ${f.balanceAmount > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+                            ₹{(f.balanceAmount || 0).toLocaleString()}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                                f.status === 'paid'
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                  : f.status === 'partial'
+                                  ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                  : 'bg-rose-100 text-rose-800 border border-rose-200'
+                              }`}
+                            >
+                              {f.status}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            {isAccountant ? (
+                              <button
+                                onClick={() => {
+                                  if (f.studentId?.email) {
+                                    handleStudentLookup(f.studentId.email);
+                                  } else {
+                                    setSelectedFee(f);
+                                    setAmountPaid(String(f.balanceAmount || ''));
+                                  }
+                                }}
+                                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all shadow-xs cursor-pointer flex items-center gap-1 ml-auto"
+                              >
+                                <DollarSign className="w-3.5 h-3.5" />
+                                <span>Collect Fee</span>
+                              </button>
+                            ) : (
+                              <span className="text-[10px] font-bold text-slate-400 italic">
+                                {f.balanceAmount > 0 ? 'Pay at Accounts Counter' : 'Receipt Issued by Counter'}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* TAB 2: STANDARD-WISE CLASS FEE CONFIGURATION SETTINGS */}
+      {activeTab === 'standard-settings' && isAccountant && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div>
+              <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">
+                Standard-Wise Constant Class Fees Configuration
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Set constant annual academic fee amounts per Standard (Class 1 to Class 10). Updating fee settings recalculates fee ledgers for all students enrolled in that class.
+              </p>
+            </div>
+          </div>
+
+          {loadingSettings ? (
+            <div className="p-8 text-center text-xs font-bold text-slate-400">Loading standard fee settings...</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {classFeeSettings.map((item) => (
+                <div key={item.classId} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 hover:border-indigo-300 transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="px-3 py-1 bg-indigo-600 text-white text-xs font-black rounded-xl uppercase">
+                      {item.className}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setEditingClass(item);
+                        setNewClassAmount(String(item.totalAmount));
+                      }}
+                      className="px-3 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Edit3 className="w-3 h-3 text-indigo-600" /> Edit Fee
+                    </button>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Standard Constant Fee</span>
+                    <span className="text-2xl font-black text-slate-900 font-mono mt-0.5 block">
+                      ₹{Number(item.totalAmount).toLocaleString()}
+                    </span>
+                    <span className="text-[11px] font-semibold text-indigo-600 mt-1 block truncate">
+                      {item.title}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* METRIC OVERVIEW CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Collected Revenue</span>
-            <span className="text-2xl font-black text-emerald-600 mt-1 block">₹{totalCollected.toLocaleString()}</span>
-            <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-0.5 mt-1">
-              <CheckCircle2 className="w-3 h-3" /> Credited Counter Payments
-            </span>
-          </div>
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
-            <DollarSign className="w-6 h-6" />
-          </div>
-        </div>
+      {/* EDIT STANDARD FEE MODAL */}
+      {editingClass && (
+        <Modal isOpen={Boolean(editingClass)} onClose={() => setEditingClass(null)} title={`Set Constant Fee for ${editingClass.className}`}>
+          <form onSubmit={handleUpdateStandardFee} className="space-y-4">
+            <div className="p-3 bg-slate-50 border rounded-xl text-xs space-y-1">
+              <p><strong>Standard / Class:</strong> {editingClass.className}</p>
+              <p><strong>Fee Title:</strong> {editingClass.title}</p>
+            </div>
 
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Outstanding Dues</span>
-            <span className="text-2xl font-black text-rose-600 mt-1 block">₹{totalOutstanding.toLocaleString()}</span>
-            <span className="text-[10px] font-semibold text-amber-600 mt-1 block">Pending Student Receivables</span>
-          </div>
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl">
-            <AlertCircle className="w-6 h-6" />
-          </div>
-        </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Standard Annual Fee Amount (₹)</label>
+              <input
+                type="number"
+                required
+                min="0"
+                value={newClassAmount}
+                onChange={(e) => setNewClassAmount(e.target.value)}
+                className="w-full px-3 py-2 border rounded-xl text-sm font-black font-mono focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
 
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Expected Fee Budget</span>
-            <span className="text-2xl font-black text-slate-900 mt-1 block">₹{totalExpected.toLocaleString()}</span>
-            <span className="text-[10px] font-semibold text-indigo-600 mt-1 block">Annual Academic Fee Pool</span>
-          </div>
-          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
-            <CreditCard className="w-6 h-6" />
-          </div>
-        </div>
-      </div>
-
-      {/* MASTER STUDENT FEES TABLE */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">
-            {isAccountant ? 'Student Academic Fee Ledgers' : 'My Fee Payment History'}
-          </h2>
-          <span className="text-xs text-slate-400 font-semibold">{studentFees.length} Total Student Records</span>
-        </div>
-
-        {loading ? (
-          <div className="p-12 text-center text-slate-400 font-bold text-xs">Loading fee accounts...</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                <tr>
-                  <th className="py-3 px-4">Student Name</th>
-                  <th className="py-3 px-4">Fee Head / Structure</th>
-                  <th className="py-3 px-4 text-right">Net Fee</th>
-                  <th className="py-3 px-4 text-right">Amount Paid</th>
-                  <th className="py-3 px-4 text-right">Balance Due</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Counter Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
-                {studentFees.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400">
-                      No student fee accounts found.
-                    </td>
-                  </tr>
-                ) : (
-                  studentFees.map((f) => (
-                    <tr key={f._id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="py-3.5 px-4 font-black text-slate-900">
-                        {f.studentId?.firstName} {f.studentId?.lastName}
-                        <span className="block text-[10px] text-slate-400 font-mono">
-                          Adm: {f.studentId?.admissionNumber || 'ADM-2026'}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-indigo-700 font-bold">
-                        {f.feeStructureId?.title || 'Annual Academic Fee'}
-                      </td>
-                      <td className="py-3.5 px-4 text-right text-slate-700 font-mono">₹{(f.netAmount || 0).toLocaleString()}</td>
-                      <td className="py-3.5 px-4 text-right text-emerald-600 font-mono font-bold">₹{(f.paidAmount || 0).toLocaleString()}</td>
-                      <td className={`py-3.5 px-4 text-right font-mono font-black ${f.balanceAmount > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
-                        ₹{(f.balanceAmount || 0).toLocaleString()}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
-                            f.status === 'paid'
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                              : f.status === 'partial'
-                              ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                              : 'bg-rose-100 text-rose-800 border border-rose-200'
-                          }`}
-                        >
-                          {f.status}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        {isAccountant ? (
-                          <button
-                            onClick={() => {
-                              if (f.studentId?.email) {
-                                handleStudentLookup(f.studentId.email);
-                              } else {
-                                setSelectedFee(f);
-                                setAmountPaid(String(f.balanceAmount || ''));
-                              }
-                            }}
-                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all shadow-xs cursor-pointer flex items-center gap-1 ml-auto"
-                          >
-                            <DollarSign className="w-3.5 h-3.5" />
-                            <span>Collect Fee</span>
-                          </button>
-                        ) : (
-                          <span className="text-[10px] font-bold text-slate-400 italic">
-                            {f.balanceAmount > 0 ? 'Pay at Accounts Counter' : 'Receipt Issued by Counter'}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <button type="button" onClick={() => setEditingClass(null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs">
+                Cancel
+              </button>
+              <button type="submit" disabled={updatingSetting} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs shadow-md shadow-indigo-600/20 disabled:opacity-50 cursor-pointer">
+                {updatingSetting ? 'Saving Settings...' : 'Save & Sync Student Balances'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {/* DEDICATED SPECIFIC STUDENT FEE ACCOUNT PORTAL MODAL (FOR ACCOUNTANT) */}
       {activeStudentPortal && (
@@ -387,16 +553,24 @@ export default function FeeManager() {
                   value={selectedFee?._id || ''}
                   onChange={(e) => {
                     const found = activeStudentPortal.fees.find((x) => x._id === e.target.value);
-                    setSelectedFee(found);
-                    if (found) setAmountPaid(String(found.balanceAmount || ''));
+                    if (found) {
+                      setSelectedFee(found);
+                      setAmountPaid(String(found.balanceAmount || ''));
+                    }
                   }}
-                  className="w-full px-3 py-2 border rounded-xl text-xs font-semibold bg-white focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 border border-emerald-300 rounded-xl text-xs font-bold bg-white focus:ring-2 focus:ring-emerald-500 text-slate-900"
                 >
-                  {activeStudentPortal.fees.map((f) => (
-                    <option key={f._id} value={f._id}>
-                      {f.feeStructureId?.title || 'Academic Fee'} - Due: ₹{(f.balanceAmount || 0).toLocaleString()} (Net: ₹{(f.netAmount || 0).toLocaleString()})
+                  {activeStudentPortal.fees && activeStudentPortal.fees.length > 0 ? (
+                    activeStudentPortal.fees.map((f) => (
+                      <option key={f._id} value={f._id}>
+                        {f.feeStructureId?.title || `${activeStudentPortal.student.classId?.name || 'Standard'} Annual Fee`} - Due: ₹{(f.balanceAmount || 0).toLocaleString()} (Net: ₹{(f.netAmount || 0).toLocaleString()})
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">
+                      {activeStudentPortal.student.classId?.name || 'Standard'} Academic Fee - Initialized Standard Fee
                     </option>
-                  ))}
+                  )}
                 </select>
               </div>
 
@@ -443,7 +617,7 @@ export default function FeeManager() {
 
               <button
                 type="submit"
-                disabled={submittingPayment}
+                disabled={submittingPayment || !selectedFee}
                 className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <Receipt className="w-4 h-4" />
