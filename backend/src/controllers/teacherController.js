@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Subject = require('../models/Subject');
 const Class = require('../models/Class');
 const { logAudit } = require('../middleware/auditMiddleware');
+const syncTeachersAndSubjects = require('../utils/syncTeachersSubjects');
 
 async function resolveSubjectsFromInput(schoolId, subjectsInput) {
   if (!subjectsInput) return { subjectIds: [], names: [] };
@@ -112,6 +113,7 @@ exports.createTeacher = async (req, res, next) => {
     user.profileModel = 'Teacher';
     await user.save();
 
+    await syncTeachersAndSubjects();
     teacher = await Teacher.findById(teacher._id).populate('subjects');
 
     await logAudit(req, 'TEACHER_CREATED', 'Teacher', teacher._id.toString());
@@ -144,6 +146,7 @@ exports.updateTeacher = async (req, res, next) => {
       await User.findByIdAndUpdate(teacher.userId, { email: req.body.email.toLowerCase().trim() });
     }
 
+    await syncTeachersAndSubjects();
     await logAudit(req, 'TEACHER_UPDATED', 'Teacher', teacher._id.toString());
     res.status(200).json({ success: true, message: 'Teacher updated successfully', data: teacher });
   } catch (error) {
@@ -163,6 +166,7 @@ exports.deleteTeacher = async (req, res, next) => {
     }
 
     await Teacher.findByIdAndDelete(req.params.id);
+    await syncTeachersAndSubjects();
     await logAudit(req, 'TEACHER_DELETED', 'Teacher', req.params.id);
     res.status(200).json({ success: true, message: 'Teacher deleted successfully' });
   } catch (error) {
