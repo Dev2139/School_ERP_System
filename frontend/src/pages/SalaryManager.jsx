@@ -24,7 +24,7 @@ export default function SalaryManager() {
   const { user } = useAuth();
   const { addToast } = useNotification();
 
-  const isPrincipal = ['super_admin', 'admin'].includes(user?.role);
+  const isPrincipal = ['super_admin', 'admin', 'accountant'].includes(user?.role);
   const isTeacher = user?.role === 'teacher';
 
   const [salaries, setSalaries] = useState([]);

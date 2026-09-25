@@ -28,7 +28,7 @@ function RoleRoute({ roles, children }) {
   const { user } = useAuth();
   if (!roles.includes(user?.role)) {
     const profileId = user?.profileId?._id || user?.profileId || 'profile';
-    const rolePrefix = user?.role === 'admin' ? '/admin' : user?.role === 'teacher' ? `/teacher/${profileId}` : `/student/${profileId}`;
+    const rolePrefix = user?.role === 'admin' ? '/admin' : user?.role === 'teacher' ? `/teacher/${profileId}` : user?.role === 'accountant' ? '/accountant' : `/student/${profileId}`;
     return <Navigate to={`${rolePrefix}/dashboard`} replace />;
   }
   return children;
@@ -38,7 +38,7 @@ function RoleRoute({ roles, children }) {
 function RoleRedirect({ subPath }) {
   const { user } = useAuth();
   const profileId = user?.profileId?._id || user?.profileId || 'profile';
-  const rolePrefix = user?.role === 'admin' ? '/admin' : user?.role === 'teacher' ? `/teacher/${profileId}` : `/student/${profileId}`;
+  const rolePrefix = user?.role === 'admin' ? '/admin' : user?.role === 'teacher' ? `/teacher/${profileId}` : user?.role === 'accountant' ? '/accountant' : `/student/${profileId}`;
 
   const targetPath = subPath === 'sections' && user?.role === 'student'
     ? `/student/${profileId}/section`
@@ -68,7 +68,7 @@ export default function App() {
   }
 
   const profileId = user?.profileId?._id || user?.profileId || 'profile';
-  const rolePrefix = user?.role === 'admin' ? '/admin' : user?.role === 'teacher' ? `/teacher/${profileId}` : `/student/${profileId}`;
+  const rolePrefix = user?.role === 'admin' ? '/admin' : user?.role === 'teacher' ? `/teacher/${profileId}` : user?.role === 'accountant' ? '/accountant' : `/student/${profileId}`;
 
   return (
     <Routes>
@@ -436,6 +436,56 @@ export default function App() {
           path="student/:id/settings"
           element={
             <RoleRoute roles={['student']}>
+              <SettingsPage />
+            </RoleRoute>
+          }
+        />
+
+        {/* ---------------- ACCOUNTANT / ACCOUNTS ROUTES ---------------- */}
+        <Route
+          path="accountant/dashboard"
+          element={
+            <RoleRoute roles={['accountant']}>
+              <Dashboard />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="accountant/fees"
+          element={
+            <RoleRoute roles={['accountant']}>
+              <FeeManager />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="accountant/salary"
+          element={
+            <RoleRoute roles={['accountant']}>
+              <SalaryManager />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="accountant/students"
+          element={
+            <RoleRoute roles={['accountant']}>
+              <StudentList />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="accountant/reports"
+          element={
+            <RoleRoute roles={['accountant']}>
+              <ReportsManager />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="accountant/settings"
+          element={
+            <RoleRoute roles={['accountant']}>
               <SettingsPage />
             </RoleRoute>
           }

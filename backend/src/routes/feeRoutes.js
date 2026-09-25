@@ -6,10 +6,10 @@ const { authenticateUser, authorizeRoles } = require('../middleware/authMiddlewa
 router.use(authenticateUser);
 
 router.get('/structures', feeController.getFeeStructures);
-router.post('/structures', authorizeRoles('admin'), feeController.createFeeStructure);
+router.post('/structures', authorizeRoles('admin', 'accountant'), feeController.createFeeStructure);
 
 router.get('/student-fees', feeController.getStudentFees);
-router.post('/payments', authorizeRoles('admin'), feeController.recordPayment);
+router.post('/payments', authorizeRoles('admin', 'accountant'), feeController.recordPayment);
 router.get('/payments', feeController.getPayments);
 router.get('/receipt/:id', feeController.downloadReceipt);
 

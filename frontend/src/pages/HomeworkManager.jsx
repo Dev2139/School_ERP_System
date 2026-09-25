@@ -30,6 +30,7 @@ export default function HomeworkManager() {
 
   const [homeworkList, setHomeworkList] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [teacherSubjects, setTeacherSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Modals state
@@ -68,16 +69,16 @@ export default function HomeworkManager() {
 
   const fetchClassesAndSubjects = async () => {
     try {
-      const res = await api.get('/academics/classes');
-      if (res.data.success && res.data.data.length > 0) {
-        setClasses(res.data.data);
-        const firstCls = res.data.data[0];
-        setPostForm((prev) => ({
-          ...prev,
-          classId: firstCls._id,
-          sectionId: firstCls.sections?.[0]?._id || '',
-          subjectId: firstCls.subjects?.[0]?._id || '',
-        }));
+      const classRes = await api.get('/academics/classes');
+      if (classRes.data.success && classRes.data.data.length > 0) {
+        setClasses(classRes.data.data);
+      }
+
+      if (isTeacher) {
+        const subjRes = await api.get('/academics/subjects');
+        if (subjRes.data.success) {
+          setTeacherSubjects(subjRes.data.data);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -105,20 +106,66 @@ export default function HomeworkManager() {
       ...prev,
       classId: cId,
       sectionId: cls?.sections?.[0]?._id || '',
-      subjectId: cls?.subjects?.[0]?._id || '',
+      subjectId: '',
     }));
   };
 
+  // Derive available subjects for post form
+  const teacherProfileId = user?.profileId?._id || user?.profileId;
+  const selectedClassObj = classes.find((c) => c._id === postForm.classId) || classes[0];
+
+  const allClassSubjects = selectedClassObj?.subjects || [];
+  let availableSubjects = allClassSubjects;
+
+  if (isTeacher) {
+    const matched = allClassSubjects.filter((sub) => {
+      const subTeacherId = sub.teacherId?._id || sub.teacherId;
+      const isDirectMatch = subTeacherId && subTeacherId.toString() === teacherProfileId?.toString();
+      const isInTeacherList = teacherSubjects.some((ts) => (ts._id || ts).toString() === (sub._id || sub).toString());
+      return isDirectMatch || isInTeacherList;
+    });
+    availableSubjects = matched.length > 0 ? matched : (teacherSubjects.length > 0 ? teacherSubjects : allClassSubjects);
+  }
+
+  // Auto-set initial classId, sectionId, subjectId when modal opens or class changes
+  useEffect(() => {
+    if (classes.length > 0 && !postForm.classId) {
+      const firstCls = classes[0];
+      setPostForm((prev) => ({
+        ...prev,
+        classId: firstCls._id,
+        sectionId: firstCls.sections?.[0]?._id || '',
+      }));
+    }
+  }, [classes]);
+
+  useEffect(() => {
+    if (availableSubjects.length > 0) {
+      if (!postForm.subjectId || !availableSubjects.some((s) => s._id === postForm.subjectId)) {
+        setPostForm((prev) => ({
+          ...prev,
+          subjectId: availableSubjects[0]._id,
+        }));
+      }
+    }
+  }, [postForm.classId, availableSubjects]);
+
   const handlePostHomework = async (e) => {
     e.preventDefault();
-    if (!postForm.title || !postForm.description || !postForm.classId || !postForm.subjectId) {
-      addToast('Please fill all required fields', 'error');
+    const finalSubjectId = postForm.subjectId || (availableSubjects[0]?._id || '');
+
+    if (!postForm.title || !postForm.description || !postForm.classId || !finalSubjectId) {
+      addToast('Please fill all required fields and select a valid subject', 'error');
       return;
     }
 
     setSubmitting(true);
     try {
-      const res = await api.post('/homework', postForm);
+      const res = await api.post('/homework', {
+        ...postForm,
+        subjectId: finalSubjectId,
+      });
+
       if (res.data.success) {
         addToast('Homework assignment published successfully!', 'success');
         setIsPostModalOpen(false);
@@ -128,7 +175,7 @@ export default function HomeworkManager() {
           dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           classId: classes[0]?._id || '',
           sectionId: classes[0]?.sections?.[0]?._id || '',
-          subjectId: classes[0]?.subjects?.[0]?._id || '',
+          subjectId: '',
           allowOnlineSubmission: false,
         });
         fetchHomework();
@@ -177,8 +224,6 @@ export default function HomeworkManager() {
     setIsSubmitModalOpen(true);
   };
 
-  const selectedClassObj = classes.find((c) => c._id === postForm.classId);
-
   return (
     <div className="space-y-6">
       {/* Top Banner Header */}
@@ -200,7 +245,7 @@ export default function HomeworkManager() {
               <p className="text-xs text-slate-500 font-medium">
                 {isStudent
                   ? 'Track assigned subject tasks, deadlines, and submission requirements for your class'
-                  : 'Assign homework to specific classes, control online vs in-class submission options, and review student work'}
+                  : 'Assign homework for your subjects, control online vs in-class submission options, and review student work'}
               </p>
             </div>
           </div>
@@ -428,20 +473,36 @@ export default function HomeworkManager() {
                 </select>
               </div>
 
+              {/* SUBJECT SELECTION: LOCKED IF 1 ASSIGNED SUBJECT, DROPDOWN IF MULTIPLE */}
               <div>
                 <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Subject *</label>
-                <select
-                  required
-                  value={postForm.subjectId}
-                  onChange={(e) => setPostForm({ ...postForm, subjectId: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-                >
-                  {selectedClassObj?.subjects?.map((sub) => (
-                    <option key={sub._id} value={sub._id}>
-                      {sub.name}
-                    </option>
-                  ))}
-                </select>
+                {availableSubjects.length > 1 ? (
+                  <select
+                    required
+                    value={postForm.subjectId}
+                    onChange={(e) => setPostForm({ ...postForm, subjectId: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                  >
+                    {availableSubjects.map((sub) => (
+                      <option key={sub._id} value={sub._id}>
+                        {sub.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : availableSubjects.length === 1 ? (
+                  <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs h-[38px]">
+                    <span className="font-extrabold text-slate-800 truncate">
+                      {availableSubjects[0].name}
+                    </span>
+                    <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-black rounded-md uppercase border border-indigo-100 shrink-0">
+                      Assigned
+                    </span>
+                  </div>
+                ) : (
+                  <div className="px-3 py-2 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl h-[38px] flex items-center">
+                    No assigned subject
+                  </div>
+                )}
               </div>
             </div>
 
@@ -496,7 +557,7 @@ export default function HomeworkManager() {
               </button>
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || availableSubjects.length === 0}
                 className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50 cursor-pointer"
               >
                 {submitting ? 'Publishing...' : 'Publish Homework'}

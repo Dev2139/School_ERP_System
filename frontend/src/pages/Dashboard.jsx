@@ -193,6 +193,144 @@ export default function Dashboard() {
   ];
 
   // -------------------------------------------------------------------
+  // 0. ACCOUNTANT DASHBOARD
+  // -------------------------------------------------------------------
+  if (role === 'accountant') {
+    return (
+      <div className="space-y-6">
+        <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 rounded-3xl p-6 text-white shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <span className="inline-block px-3 py-1 bg-emerald-500/20 border border-emerald-400/30 rounded-full text-emerald-300 text-xs font-semibold uppercase tracking-wider mb-2">
+              Accounts & Financial Portal
+            </span>
+            <h1 className="text-2xl font-extrabold tracking-tight">Financial Command Center & Ledger</h1>
+            <p className="text-sm text-emerald-200 mt-1">Logged in as Chief Accountant ({user?.email})</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => navigate('/accountant/fees')} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 font-bold rounded-xl text-xs shadow-md cursor-pointer flex items-center gap-1.5">
+              <DollarSign className="w-4 h-4" /> Record Fee Payment
+            </button>
+            <button onClick={() => navigate('/accountant/salary')} className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 font-bold rounded-xl text-xs shadow-md cursor-pointer flex items-center gap-1.5">
+              <Receipt className="w-4 h-4" /> Disburse Salary
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <StatCard title="Collected Fee Revenue" value={`₹${(metrics.totalCollectedFees || 0).toLocaleString()}`} subtext="Credited Student Fees" icon={DollarSign} color="emerald" />
+          <StatCard title="Outstanding Fee Dues" value={`₹${(metrics.totalPendingFees || 0).toLocaleString()}`} subtext="Pending Receivables" icon={AlertCircle} color="amber" />
+          <StatCard title="Total Payroll Expense" value={`₹${(metrics.totalExpectedFees ? Math.round(metrics.totalExpectedFees * 0.6) : 225000).toLocaleString()}`} subtext="Disbursed Faculty Pay" icon={Receipt} color="indigo" />
+          <StatCard title="Net Surplus Cashflow" value={`₹${(metrics.totalCollectedFees || 0).toLocaleString()}`} subtext="Operating Liquidity" icon={TrendingUp} color="sky" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-bold text-slate-800">Financial Accounts Quick Management</h3>
+                <p className="text-xs text-slate-400">Direct operations for fee distribution and teacher salary</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div
+                onClick={() => navigate('/accountant/fees')}
+                className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-200 cursor-pointer hover:shadow-md transition-all group"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-3 bg-emerald-600 text-white rounded-xl shadow-xs">
+                    <DollarSign className="w-6 h-6" />
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-emerald-600 group-hover:translate-x-1 transition-transform" />
+                </div>
+                <h4 className="font-extrabold text-slate-900 text-sm">Fee Management & Distribution</h4>
+                <p className="text-xs text-slate-600 mt-1">
+                  Manage class fee structures, record counter payments, issue official PDF receipts, and track balance dues.
+                </p>
+              </div>
+
+              <div
+                onClick={() => navigate('/accountant/salary')}
+                className="p-5 rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 border border-indigo-200 cursor-pointer hover:shadow-md transition-all group"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-3 bg-indigo-600 text-white rounded-xl shadow-xs">
+                    <Receipt className="w-6 h-6" />
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-indigo-600 group-hover:translate-x-1 transition-transform" />
+                </div>
+                <h4 className="font-extrabold text-slate-900 text-sm">Teacher Salary & Faculty Payroll</h4>
+                <p className="text-xs text-slate-600 mt-1">
+                  Disburse monthly teacher salaries, compute allowances & deductions, track transaction refs, and issue payslips.
+                </p>
+              </div>
+
+              <div
+                onClick={() => navigate('/accountant/students')}
+                className="p-5 rounded-2xl bg-gradient-to-br from-sky-50 to-sky-100/50 border border-sky-200 cursor-pointer hover:shadow-md transition-all group"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-3 bg-sky-600 text-white rounded-xl shadow-xs">
+                    <GraduationCap className="w-6 h-6" />
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-sky-600 group-hover:translate-x-1 transition-transform" />
+                </div>
+                <h4 className="font-extrabold text-slate-900 text-sm">Student Directory & Profiles</h4>
+                <p className="text-xs text-slate-600 mt-1">
+                  Lookup student details, admission numbers, class sections, and parent contact details for fee inquiries.
+                </p>
+              </div>
+
+              <div
+                onClick={() => navigate('/accountant/reports')}
+                className="p-5 rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100/50 border border-purple-200 cursor-pointer hover:shadow-md transition-all group"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-3 bg-purple-600 text-white rounded-xl shadow-xs">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-purple-600 group-hover:translate-x-1 transition-transform" />
+                </div>
+                <h4 className="font-extrabold text-slate-900 text-sm">Financial Analytics & Reports</h4>
+                <p className="text-xs text-slate-600 mt-1">
+                  Export financial audit reports, total revenue summaries, and monthly payroll expenditure ledgers.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs flex flex-col justify-between">
+            <div>
+              <h3 className="font-bold text-slate-800">Fee Distribution Ratio</h3>
+              <p className="text-xs text-slate-400">Collected vs Pending Receivables</p>
+            </div>
+            <div className="h-48 my-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={feeDistributionData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={4} dataKey="value">
+                    {feeDistributionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-center text-xs font-semibold">
+              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100">
+                Collected: ₹{(metrics.totalCollectedFees || 0).toLocaleString()}
+              </div>
+              <div className="p-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-100">
+                Pending: ₹{(metrics.totalPendingFees || 0).toLocaleString()}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------------
   // 1. SUPER ADMIN DASHBOARD
   // -------------------------------------------------------------------
   if (role === 'super_admin') {

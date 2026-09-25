@@ -45,11 +45,15 @@ export default function Sidebar({ onClose }) {
       return `/teacher/${profileIdStr}/${subPath}`;
     }
 
+    if (role === 'accountant') {
+      return `/accountant/${subPath}`;
+    }
+
     return `/admin/${subPath}`;
   };
 
   const menuItems = [
-    { label: 'Dashboard', path: getRolePath('dashboard'), icon: LayoutDashboard, roles: ['admin', 'teacher', 'student'] },
+    { label: 'Dashboard', path: getRolePath('dashboard'), icon: LayoutDashboard, roles: ['admin', 'teacher', 'student', 'accountant'] },
 
     // Student Class & Section Profile
     {
@@ -59,8 +63,8 @@ export default function Sidebar({ onClose }) {
       roles: ['student'],
     },
 
-    // Global Student Directory for Staff & Principal
-    { label: 'Student Directory', path: getRolePath('students'), icon: GraduationCap, roles: ['admin', 'teacher'] },
+    // Global Student Directory for Staff & Principal & Accounts
+    { label: 'Student Directory', path: getRolePath('students'), icon: GraduationCap, roles: ['admin', 'teacher', 'accountant'] },
 
     { label: 'Teachers & Staff', path: getRolePath('teachers'), icon: UserCheck, roles: ['admin'] },
 
@@ -69,7 +73,7 @@ export default function Sidebar({ onClose }) {
     { label: 'My Sections & Classes', path: getRolePath('sections'), icon: Layers, roles: ['teacher'] },
 
     // Faculty Salary Management
-    { label: 'Faculty Payroll', path: '/admin/salary', icon: DollarSign, roles: ['admin'] },
+    { label: role === 'accountant' ? 'Faculty Payroll & Salary' : 'Faculty Payroll', path: getRolePath('salary'), icon: DollarSign, roles: ['admin', 'accountant'] },
     { label: 'My Salary & Payslips', path: getRolePath('salary'), icon: DollarSign, roles: ['teacher'] },
 
     {
@@ -93,16 +97,16 @@ export default function Sidebar({ onClose }) {
       roles: ['admin', 'teacher', 'student'],
     },
 
-    { label: 'Fees Management', path: getRolePath('fees'), icon: DollarSign, roles: ['admin', 'student'] },
+    { label: role === 'accountant' ? 'Fee Management & Invoicing' : 'Fees Management', path: getRolePath('fees'), icon: DollarSign, roles: ['admin', 'student', 'accountant'] },
     { label: 'Admissions', path: '/admin/admissions', icon: UserPlus, roles: ['admin'] },
     { label: 'Notices Board', path: getRolePath('notices'), icon: Bell, roles: ['admin', 'teacher', 'student'] },
     { label: 'School Calendar', path: getRolePath('calendar'), icon: Calendar, roles: ['admin', 'teacher', 'student'] },
     { label: 'Leave Requests', path: getRolePath('leave'), icon: CalendarDays, roles: ['admin', 'teacher', 'student'] },
     { label: 'Library', path: '/admin/library', icon: BookOpen, roles: ['admin'] },
     { label: 'Transport', path: '/admin/transport', icon: Bus, roles: ['admin'] },
-    { label: 'Reports & Analytics', path: '/admin/reports', icon: BarChart3, roles: ['admin'] },
+    { label: 'Reports & Analytics', path: getRolePath('reports'), icon: BarChart3, roles: ['admin', 'accountant'] },
     { label: 'Audit Logs', path: '/admin/audit-logs', icon: ShieldCheck, roles: ['admin'] },
-    { label: 'Settings & Security', path: getRolePath('settings'), icon: Settings, roles: ['admin', 'teacher', 'student'] },
+    { label: 'Settings & Security', path: getRolePath('settings'), icon: Settings, roles: ['admin', 'teacher', 'student', 'accountant'] },
   ];
 
   const filteredMenu = menuItems.filter((item) => item.roles.includes(role));
@@ -118,7 +122,7 @@ export default function Sidebar({ onClose }) {
           <div>
             <h1 className="font-bold text-white tracking-wide text-base leading-tight">Greenwood ERP</h1>
             <p className="text-[10px] text-indigo-400 font-semibold uppercase tracking-wider">
-              {role === 'admin' ? 'Principal Portal' : role === 'teacher' ? 'Faculty Portal' : 'Student Portal'}
+              {role === 'admin' ? 'Principal Portal' : role === 'teacher' ? 'Faculty Portal' : role === 'accountant' ? 'Accounts Portal' : 'Student Portal'}
             </p>
           </div>
         </div>

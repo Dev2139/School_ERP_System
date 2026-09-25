@@ -6,6 +6,6 @@ const { authenticateUser, authorizeRoles } = require('../middleware/authMiddlewa
 router.use(authenticateUser);
 
 router.get('/', salaryController.getSalaries);
-router.post('/disburse', authorizeRoles('admin'), salaryController.disburseSalary);
+router.post('/disburse', authorizeRoles('admin', 'accountant'), salaryController.disburseSalary);
 
 module.exports = router;

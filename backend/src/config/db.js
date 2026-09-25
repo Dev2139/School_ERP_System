@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const seedAccountant = require('../utils/seedAccountant');
 
 const connectDB = async () => {
   try {
@@ -9,6 +10,7 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 3000,
     });
     console.log(`[MongoDB] Connected successfully: ${conn.connection.host}`);
+    await seedAccountant();
     return conn;
   } catch (error) {
     console.warn(`[MongoDB] Local connection failed (${error.message}). Initializing MongoDB Memory Server...`);
@@ -18,6 +20,7 @@ const connectDB = async () => {
       const uri = mongoServer.getUri();
       const conn = await mongoose.connect(uri);
       console.log(`[MongoDB Memory Server] Connected successfully: ${uri}`);
+      await seedAccountant();
       return conn;
     } catch (memError) {
       console.error(`[MongoDB] Memory server initialization failed:`, memError.message);

@@ -81,8 +81,14 @@ export default function Login() {
 
     if (res?.success) {
       addToast('Welcome back to Greenwood ERP!', 'success');
-      const profileId = res.user?.profileId?._id || res.user?.profileId || 'profile';
-      const rolePrefix = res.user?.role === 'admin' ? '/admin' : res.user?.role === 'teacher' ? `/teacher/${profileId}` : `/student/${profileId}`;
+      const rolePrefix =
+        res.user?.role === 'admin'
+          ? '/admin'
+          : res.user?.role === 'teacher'
+          ? `/teacher/${profileId}`
+          : res.user?.role === 'accountant'
+          ? '/accountant'
+          : `/student/${profileId}`;
       navigate(`${rolePrefix}/dashboard`);
     } else {
       addToast(res?.message || 'Login failed. Check credentials.', 'error');
