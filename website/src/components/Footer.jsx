@@ -14,23 +14,12 @@ export default function Footer() {
         
         {/* Col 1: Product & Parent Identity */}
         <div className="md:col-span-5 space-y-4">
-          <Link to="/" className="flex items-center gap-3 group">
+          <Link to="/" className="flex items-center group">
             <img 
               src="https://res.cloudinary.com/dsddldquo/image/upload/v1790362370/zrkwlnckrmkg3jadau6u.png" 
               alt="Greenwood ERP Logo" 
-              className="h-10 w-auto object-contain brightness-110 drop-shadow-xs"
+              className="h-11 w-auto object-contain brightness-110 drop-shadow-xs"
             />
-            
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl font-extrabold tracking-tight text-white font-['Plus_Jakarta_Sans']">
-                  Greenwood<span className="text-blue-500">.</span>
-                </span>
-                <span className="text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full bg-blue-900/50 text-blue-300 border border-blue-700/50">
-                  ERP
-                </span>
-              </div>
-            </div>
           </Link>
 
           <p className="text-slate-400 text-xs leading-relaxed max-w-sm">

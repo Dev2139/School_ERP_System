@@ -33,27 +33,13 @@ export default function Navbar({ onOpenDemoModal }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           
-          {/* Greenwood ERP Logo Image & Product Identity */}
-          <Link to="/" className="flex items-center gap-3 group text-left">
+          {/* Greenwood ERP Logo Image Only */}
+          <Link to="/" className="flex items-center group">
             <img 
               src="https://res.cloudinary.com/dsddldquo/image/upload/v1790362370/zrkwlnckrmkg3jadau6u.png" 
               alt="Greenwood ERP Logo" 
-              className="h-10 w-auto object-contain group-hover:scale-105 transition-transform duration-300 drop-shadow-xs"
+              className="h-10 sm:h-11 w-auto object-contain group-hover:scale-105 transition-transform duration-300 drop-shadow-xs"
             />
-            
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl font-extrabold tracking-tight text-slate-900 font-['Plus_Jakarta_Sans'] group-hover:text-blue-600 transition-colors">
-                  Greenwood<span className="text-blue-600">.</span>
-                </span>
-                <span className="text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/80">
-                  ERP
-                </span>
-              </div>
-              <span className="text-[10px] font-semibold text-slate-400 tracking-wide -mt-0.5">
-                by Devdhara Technologies
-              </span>
-            </div>
           </Link>
 
           {/* Desktop Navigation Links */}
