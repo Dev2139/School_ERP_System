@@ -1075,11 +1075,6 @@ export default function ExamManager() {
                   onChange={(e) => setScheduleForm({ ...scheduleForm, examDate: e.target.value })}
                   className="w-full px-3 py-2 border rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-500"
                 />
-                {parseDateStr(scheduleForm.examDate)?.getDay() === 0 ? (
-                  <p className="text-[10px] text-rose-600 font-bold mt-1">⚠️ Selected date is a Sunday!</p>
-                ) : (
-                  <p className="text-[10px] text-emerald-600 font-medium mt-1">✓ Auto-advanced (+1 day, Sundays skipped)</p>
-                )}
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Timing</label>
