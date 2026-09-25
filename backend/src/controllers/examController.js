@@ -62,23 +62,42 @@ exports.saveExamSubject = async (req, res, next) => {
     // Check Class Teacher Permission for teachers
     if (req.user.role === 'teacher') {
       const teacherProfileId = (req.user.profileId?._id || req.user.profileId || '').toString();
-      const classObj = await Class.findById(classId);
-      const sections = await Section.find({ classId });
+      const teacherEmail = (req.user.email || '').toLowerCase().trim();
 
-      let isClassTeacher = false;
-      if (classObj && classObj.classTeacher && classObj.classTeacher.toString() === teacherProfileId) {
-        isClassTeacher = true;
-      }
-      for (const s of sections) {
-        if (s.classTeacher && s.classTeacher.toString() === teacherProfileId) {
-          isClassTeacher = true;
+      const classObj = await Class.findById(classId).populate('classTeacher');
+      const sections = await Section.find({ classId }).populate('classTeacher');
+
+      let isAuthorizedTeacher = false;
+
+      if (classObj && classObj.classTeacher) {
+        const ctId = (classObj.classTeacher._id || classObj.classTeacher).toString();
+        const ctEmail = (classObj.classTeacher.email || '').toLowerCase().trim();
+        if (ctId === teacherProfileId || (teacherEmail && ctEmail === teacherEmail)) {
+          isAuthorizedTeacher = true;
         }
       }
 
-      if (!isClassTeacher) {
+      for (const s of sections) {
+        if (s.classTeacher) {
+          const sCtId = (s.classTeacher._id || s.classTeacher).toString();
+          const sCtEmail = (s.classTeacher.email || '').toLowerCase().trim();
+          if (sCtId === teacherProfileId || (teacherEmail && sCtEmail === teacherEmail)) {
+            isAuthorizedTeacher = true;
+          }
+        }
+      }
+
+      if (!isAuthorizedTeacher && req.user.profileId) {
+        const teacherDoc = await Teacher.findById(req.user.profileId);
+        if (teacherDoc && teacherDoc.assignedClasses && teacherDoc.assignedClasses.map((id) => id.toString()).includes(classId.toString())) {
+          isAuthorizedTeacher = true;
+        }
+      }
+
+      if (!isAuthorizedTeacher) {
         return res.status(403).json({
           success: false,
-          message: 'Forbidden. Only the assigned Class Teacher can create or update the exam timetable for this class.',
+          message: 'Forbidden. Only assigned Class Teachers of this class standard can schedule or modify its exam timetable.',
         });
       }
     }

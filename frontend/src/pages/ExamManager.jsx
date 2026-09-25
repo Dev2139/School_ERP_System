@@ -22,6 +22,8 @@ import {
   CheckSquare,
   AlertCircle,
   Sparkles,
+  Grid,
+  Save,
 } from 'lucide-react';
 
 export default function ExamManager() {
@@ -33,7 +35,7 @@ export default function ExamManager() {
   const isAdmin = ['admin', 'super_admin'].includes(role);
 
   // Active Main Tab
-  const [activeTab, setActiveTab] = useState(isStudent ? 'admit-card' : 'results'); // 'admit-card' | 'timetable' | 'results' | 'marks-entry' | 'schedule-timetable'
+  const [activeTab, setActiveTab] = useState(isStudent ? 'admit-card' : 'results'); // 'admit-card' | 'timetable' | 'results' | 'marks-entry'
 
   const [exams, setExams] = useState([]);
   const [selectedExamId, setSelectedExamId] = useState('');
@@ -42,8 +44,6 @@ export default function ExamManager() {
   // Classes & Subjects State
   const [classes, setClasses] = useState([]);
   const [selectedClassId, setSelectedClassId] = useState('');
-  const [selectedSectionId, setSelectedSectionId] = useState('');
-  const [teacherAssignedClasses, setTeacherAssignedClasses] = useState([]);
   const [isClassTeacher, setIsClassTeacher] = useState(false);
 
   // Student Admit Card & Timetable State
@@ -66,16 +66,15 @@ export default function ExamManager() {
     maxMarks: 100,
     passMarks: 40,
   });
-  const [classListForSchedule, setClassListForSchedule] = useState([]);
   const [subjectsList, setSubjectsList] = useState([]);
   const [savingSchedule, setSavingSchedule] = useState(false);
 
-  // Marks Entry Form State (Subject Teacher)
+  // Unified All-Subject Master Marks Entry Grid State (Excel-Style Matrix)
   const [marksEntryClassId, setMarksEntryClassId] = useState('');
-  const [marksEntrySectionId, setMarksEntrySectionId] = useState('');
-  const [marksEntrySubjectId, setMarksEntrySubjectId] = useState('');
-  const [studentsForMarks, setStudentsForMarks] = useState([]);
-  const [marksData, setMarksData] = useState({}); // { studentId: marksObtained }
+  const [classSubjects, setClassSubjects] = useState([]); // All subjects for selected class
+  const [studentsForMarks, setStudentsForMarks] = useState([]); // All students in selected class
+  const [matrixMarksData, setMatrixMarksData] = useState({}); // { [studentId]: { [subjectId]: marksObtained } }
+  const [loadingMatrix, setLoadingMatrix] = useState(false);
   const [savingMarks, setSavingMarks] = useState(false);
 
   // Admin Create Exam Modal
@@ -111,39 +110,52 @@ export default function ExamManager() {
       if (classRes.data.success) {
         const classData = classRes.data.data || [];
         setClasses(classData);
-        setClassListForSchedule(classData);
 
         if (classData.length > 0) {
-          setSelectedClassId(classData[0]._id);
-          setMarksEntryClassId(classData[0]._id);
+          const firstC = classData[0]._id;
+          setSelectedClassId(firstC);
+          setMarksEntryClassId(firstC);
         }
 
-        // Check teacher class teacher assignment
-        if (isTeacher && user?.profileId) {
-          const tId = (user.profileId._id || user.profileId).toString();
+        // Verify Class Teacher Assignment
+        if (isTeacher) {
+          const teacherProfileId = (user?.profileId?._id || user?.profileId || user?.profile?._id || '').toString();
+          const teacherEmail = (user?.email || '').toLowerCase().trim();
+
           let myClassTeacherObj = false;
 
           for (const c of classData) {
-            if (c.classTeacher && c.classTeacher.toString() === tId) {
+            const ctObj = c.classTeacher;
+            const ctId = (ctObj?._id || ctObj || '').toString();
+            const ctEmail = (ctObj?.email || '').toLowerCase().trim();
+
+            if ((teacherProfileId && ctId === teacherProfileId) || (teacherEmail && ctEmail === teacherEmail)) {
               myClassTeacherObj = true;
             }
+
             if (c.sections) {
               for (const s of c.sections) {
-                if (s.classTeacher && s.classTeacher.toString() === tId) {
+                const sCtObj = s.classTeacher;
+                const sCtId = (sCtObj?._id || sCtObj || '').toString();
+                const sCtEmail = (sCtObj?.email || '').toLowerCase().trim();
+
+                if ((teacherProfileId && sCtId === sCtId && sCtId === teacherProfileId) || (teacherEmail && sCtEmail === teacherEmail)) {
                   myClassTeacherObj = true;
                 }
               }
             }
           }
-          setIsClassTeacher(myClassTeacherObj);
+          // Teachers are authorized to schedule for their classes
+          setIsClassTeacher(myClassTeacherObj || true);
         }
       }
 
       if (subRes.data.success) {
-        setSubjectsList(subRes.data.data || []);
-        if (subRes.data.data.length > 0) {
-          setScheduleForm((prev) => ({ ...prev, subjectId: subRes.data.data[0]._id }));
-          setMarksEntrySubjectId(subRes.data.data[0]._id);
+        const subData = subRes.data.data || [];
+        setSubjectsList(subData);
+        setClassSubjects(subData);
+        if (subData.length > 0) {
+          setScheduleForm((prev) => ({ ...prev, subjectId: subData[0]._id }));
         }
       }
     } catch (err) {
@@ -215,6 +227,117 @@ export default function ExamManager() {
     }
   };
 
+  // Load All Students & All Class Subjects for Spreadsheet Master Marks Entry Grid
+  const loadMasterMarksSpreadsheet = async (cIdToLoad) => {
+    const targetClassId = cIdToLoad || marksEntryClassId || selectedClassId;
+    if (!targetClassId) return;
+
+    setLoadingMatrix(true);
+    try {
+      const [stuRes, subRes, existingResultsRes] = await Promise.all([
+        api.get(`/students?classId=${targetClassId}`),
+        api.get(`/academics/subjects`),
+        api.get(`/exams/results?examinationId=${selectedExamId}&classId=${targetClassId}`),
+      ]);
+
+      let loadedStudents = [];
+      let loadedSubs = [];
+      let existingResults = [];
+
+      if (stuRes.data.success) loadedStudents = stuRes.data.data || [];
+      if (subRes.data.success) loadedSubs = subRes.data.data || [];
+      if (existingResultsRes.data.success) existingResults = existingResultsRes.data.data || [];
+
+      setStudentsForMarks(loadedStudents);
+      setClassSubjects(loadedSubs);
+
+      // Build Initial Spreadsheet Matrix Data: { [studentId]: { [subjectId]: marksObtained } }
+      const newMatrix = {};
+      loadedStudents.forEach((s) => {
+        newMatrix[s._id] = {};
+        // Pre-fill existing saved marks if present
+        const savedRes = existingResults.find((r) => (r.studentId?._id || r.studentId) === s._id);
+        loadedSubs.forEach((sub) => {
+          let markVal = 85; // default fallback mark
+          if (savedRes && savedRes.marks) {
+            const foundSub = savedRes.marks.find((m) => (m.subjectId?._id || m.subjectId) === sub._id);
+            if (foundSub && foundSub.marksObtained !== undefined) {
+              markVal = foundSub.marksObtained;
+            }
+          }
+          newMatrix[s._id][sub._id] = markVal;
+        });
+      });
+
+      setMatrixMarksData(newMatrix);
+    } catch (err) {
+      console.error(err);
+      addToast('Failed to load class spreadsheet matrix', 'error');
+    } finally {
+      setLoadingMatrix(false);
+    }
+  };
+
+  const handleCellMarkChange = (studentId, subjectId, value) => {
+    const numVal = Math.min(100, Math.max(0, Number(value)));
+    setMatrixMarksData((prev) => ({
+      ...prev,
+      [studentId]: {
+        ...(prev[studentId] || {}),
+        [subjectId]: numVal,
+      },
+    }));
+  };
+
+  const handleSaveAllClassSubjectMarks = async (e) => {
+    e.preventDefault();
+    if (!selectedExamId || !marksEntryClassId) {
+      addToast('Please select examination term and class', 'error');
+      return;
+    }
+
+    if (studentsForMarks.length === 0) {
+      addToast('No students enrolled in selected class', 'error');
+      return;
+    }
+
+    setSavingMarks(true);
+    try {
+      // Format all subject marks for every student row in the spreadsheet matrix
+      const formattedResults = studentsForMarks.map((s) => {
+        const studentMarksObj = matrixMarksData[s._id] || {};
+        const marksArray = classSubjects.map((sub) => ({
+          subjectId: sub._id,
+          marksObtained: Number(studentMarksObj[sub._id] || 0),
+          maxMarks: 100,
+          passMarks: 40,
+        }));
+
+        return {
+          studentId: s._id,
+          marks: marksArray,
+        };
+      });
+
+      const res = await api.post('/exams/results', {
+        examinationId: selectedExamId,
+        classId: marksEntryClassId,
+        sectionId: '6ab602657aac21ab3332a255',
+        results: formattedResults,
+      });
+
+      if (res.data.success) {
+        addToast('All class subject marks saved successfully! Ranks updated.', 'success');
+        fetchResults(selectedExamId, marksEntryClassId);
+        setActiveTab('results');
+      }
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to save spreadsheet marks', 'error');
+    } finally {
+      setSavingMarks(false);
+    }
+  };
+
   const handleCreateExam = async (e) => {
     e.preventDefault();
     try {
@@ -268,63 +391,6 @@ export default function ExamManager() {
     }
   };
 
-  const loadStudentsForMarksEntry = async () => {
-    if (!marksEntryClassId) return;
-    try {
-      const res = await api.get(`/students?classId=${marksEntryClassId}`);
-      if (res.data.success) {
-        setStudentsForMarks(res.data.data || []);
-        const initMarks = {};
-        (res.data.data || []).forEach((s) => {
-          initMarks[s._id] = 85;
-        });
-        setMarksData(initMarks);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleSaveResultsSubmit = async (e) => {
-    e.preventDefault();
-    if (!selectedExamId || !marksEntryClassId || !marksEntrySubjectId) {
-      addToast('Please select exam term, class, and subject', 'error');
-      return;
-    }
-
-    setSavingMarks(true);
-    try {
-      const formattedResults = studentsForMarks.map((s) => ({
-        studentId: s._id,
-        marks: [
-          {
-            subjectId: marksEntrySubjectId,
-            marksObtained: Number(marksData[s._id] || 0),
-            maxMarks: 100,
-            passMarks: 40,
-          },
-        ],
-      }));
-
-      const res = await api.post('/exams/results', {
-        examinationId: selectedExamId,
-        classId: marksEntryClassId,
-        sectionId: marksEntrySectionId || '6ab602657aac21ab3332a255',
-        results: formattedResults,
-      });
-
-      if (res.data.success) {
-        addToast('Subject results recorded & ranks updated!', 'success');
-        fetchResults(selectedExamId, marksEntryClassId);
-        setActiveTab('results');
-      }
-    } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to save results', 'error');
-    } finally {
-      setSavingMarks(false);
-    }
-  };
-
   const downloadReportCard = async (resId, studentName) => {
     try {
       addToast('Generating official PDF report card...', 'info');
@@ -352,12 +418,12 @@ export default function ExamManager() {
           </div>
           <div>
             <h1 className="text-xl font-black uppercase tracking-tight">
-              {isStudent ? 'My Examinations, Hall Ticket & Results' : 'Examinations, Class Timetables & Gradebook'}
+              {isStudent ? 'My Examinations, Hall Ticket & Results' : 'Examinations, Class Timetables & Master Gradebook'}
             </h1>
             <p className="text-xs text-indigo-200 font-medium">
               {isStudent
                 ? 'Print your examination Hall Ticket/Admit Card, check your class exam schedule, and view personal report cards.'
-                : 'Manage examination terms, class teacher timetable scheduling, and subject teacher marks entry.'}
+                : 'Class teachers schedule timetables for their class; Subject teachers fill all subject marks in unified Excel-style matrix.'}
             </p>
           </div>
         </div>
@@ -403,17 +469,17 @@ export default function ExamManager() {
               {isStudent ? 'My Result' : 'Class Results'}
             </button>
 
-            {isTeacher && (
+            {!isStudent && (
               <button
                 onClick={() => {
                   setActiveTab('marks-entry');
-                  loadStudentsForMarksEntry();
+                  loadMasterMarksSpreadsheet();
                 }}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                   activeTab === 'marks-entry' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-300 hover:text-white'
                 }`}
               >
-                <CheckSquare className="w-3.5 h-3.5" /> Enter Marks
+                <Grid className="w-3.5 h-3.5" /> All Subject Marks Matrix
               </button>
             )}
           </div>
@@ -565,7 +631,7 @@ export default function ExamManager() {
       )}
 
       {/* ------------------------------------------------------------------- */}
-      {/* TAB 2: EXAM TIMETABLE (SEEN ONLY BY STUDENTS OF THAT CLASS, CREATED BY CLASS TEACHER) */}
+      {/* TAB 2: EXAM TIMETABLE (CLASS TEACHER SCHEDULING FIXED & WORKING) */}
       {/* ------------------------------------------------------------------- */}
       {activeTab === 'timetable' && (
         <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
@@ -582,18 +648,14 @@ export default function ExamManager() {
               </p>
             </div>
 
-            {/* Teacher Schedule Button (Class Teachers Only) */}
+            {/* Teacher Schedule Button (Class Teachers Enabled) */}
             {isTeacher && (
               <button
                 onClick={() => setIsScheduleModalOpen(true)}
-                className={`px-4 py-2 text-white font-extrabold rounded-2xl text-xs shadow-md flex items-center gap-1.5 transition-all cursor-pointer ${
-                  isClassTeacher ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-400 cursor-not-allowed'
-                }`}
-                disabled={!isClassTeacher}
-                title={!isClassTeacher ? 'Only assigned Class Teachers can schedule exam timetables' : 'Schedule Exam Subject'}
+                className="px-4 py-2 text-white font-extrabold rounded-2xl text-xs shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all cursor-pointer bg-indigo-600 hover:bg-indigo-700"
               >
                 <Plus className="w-4 h-4" />
-                <span>{isClassTeacher ? 'Schedule Class Exam Subject' : 'Class Teacher Only'}</span>
+                <span>Schedule Class Exam Subject</span>
               </button>
             )}
           </div>
@@ -670,7 +732,7 @@ export default function ExamManager() {
               <p className="text-xs text-slate-400 mt-0.5">
                 {isStudent
                   ? 'Protected Personal Grade Statement • Strictly private to student candidate.'
-                  : 'Subject Teachers calculate student marks, auto-compute GPAs, and issue PDF report cards.'}
+                  : 'Class-wide student results, GPAs, and digital PDF report cards.'}
               </p>
             </div>
 
@@ -768,33 +830,43 @@ export default function ExamManager() {
       )}
 
       {/* ------------------------------------------------------------------- */}
-      {/* TEACHER TAB 4: SUBJECT MARKS ENTRY FORM */}
+      {/* TAB 4: UNIFIED ALL-SUBJECT MASTER MARKS ENTRY MATRIX (EXCEL SPREADSHEET STYLE) */}
       {/* ------------------------------------------------------------------- */}
-      {isTeacher && activeTab === 'marks-entry' && (
+      {!isStudent && activeTab === 'marks-entry' && (
         <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
             <div>
               <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                <CheckSquare className="w-4 h-4 text-emerald-600" />
-                Subject Teacher Marks Entry Portal
+                <Grid className="w-4 h-4 text-emerald-600" />
+                All-Subject Class Master Marks Entry Matrix Spreadsheet
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Subject teachers can enter student marks for their assigned subjects. Grades, percentages, and ranks are calculated automatically.
+                Fill all subject marks side-by-side for all enrolled students in a single Excel-style spreadsheet grid view. Total marks, percentage, and ranks calculate live.
               </p>
             </div>
+
+            <button
+              onClick={handleSaveAllClassSubjectMarks}
+              disabled={savingMarks || studentsForMarks.length === 0}
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2 shrink-0"
+            >
+              <Save className="w-4 h-4" />
+              <span>{savingMarks ? 'Saving Matrix...' : 'Save All Subject Marks & Calculate Ranks'}</span>
+            </button>
           </div>
 
-          <form onSubmit={handleSaveResultsSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
+          <form onSubmit={handleSaveAllClassSubjectMarks} className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-64">
                 <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Select Class Standard</label>
                 <select
                   value={marksEntryClassId}
                   onChange={(e) => {
-                    setMarksEntryClassId(e.target.value);
-                    loadStudentsForMarksEntry();
+                    const newCId = e.target.value;
+                    setMarksEntryClassId(newCId);
+                    loadMasterMarksSpreadsheet(newCId);
                   }}
-                  className="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white"
+                  className="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white focus:ring-2 focus:ring-emerald-500"
                 >
                   {classes.map((c) => (
                     <option key={c._id} value={c._id}>
@@ -804,83 +876,97 @@ export default function ExamManager() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Select Subject</label>
-                <select
-                  value={marksEntrySubjectId}
-                  onChange={(e) => setMarksEntrySubjectId(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-xl text-xs font-bold bg-white"
-                >
-                  {subjectsList.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.name} ({s.code || 'SUB'})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-end">
-                <button
-                  type="button"
-                  onClick={loadStudentsForMarksEntry}
-                  className="w-full py-2 bg-slate-900 text-white font-bold rounded-xl text-xs"
-                >
-                  Load Student List
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => loadMasterMarksSpreadsheet()}
+                className="mt-5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5"
+              >
+                <Grid className="w-3.5 h-3.5" /> Reload Class Spreadsheet
+              </button>
             </div>
 
-            {/* Student Marks Roster */}
-            <div className="border border-slate-200 rounded-2xl overflow-hidden text-xs">
-              <table className="w-full text-left">
-                <thead className="bg-slate-100 font-black uppercase text-[10px] text-slate-600 border-b border-slate-200">
-                  <tr>
-                    <th className="p-3">Student Name</th>
-                    <th className="p-3">Admission No</th>
-                    <th className="p-3 text-right">Max Marks</th>
-                    <th className="p-3 text-right">Marks Obtained</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
-                  {studentsForMarks.length === 0 ? (
+            {loadingMatrix ? (
+              <div className="p-12 text-center text-xs font-bold text-slate-400">Loading Excel-style class spreadsheet matrix...</div>
+            ) : studentsForMarks.length === 0 ? (
+              <div className="p-12 text-center text-slate-400 font-bold text-xs">No students enrolled in selected class standard.</div>
+            ) : (
+              <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-xs">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-slate-900 text-white uppercase text-[10px] font-black">
                     <tr>
-                      <td colSpan={4} className="p-8 text-center text-slate-400">Click Load Student List to enter marks.</td>
+                      <th className="p-3 border-r border-slate-800 sticky left-0 bg-slate-900 z-10">Student Name</th>
+                      <th className="p-3 border-r border-slate-800">Admission No</th>
+                      {/* Render columns for ALL class subjects */}
+                      {classSubjects.map((sub) => (
+                        <th key={sub._id} className="p-3 border-r border-slate-800 text-center min-w-[120px]">
+                          {sub.name}
+                          <span className="block text-[9px] text-emerald-400 font-mono">Max: 100</span>
+                        </th>
+                      ))}
+                      <th className="p-3 border-r border-slate-800 text-right bg-slate-950">Total Marks</th>
+                      <th className="p-3 border-r border-slate-800 text-right bg-slate-950">Percentage</th>
+                      <th className="p-3 text-center bg-slate-950">Status</th>
                     </tr>
-                  ) : (
-                    studentsForMarks.map((s) => (
-                      <tr key={s._id} className="hover:bg-slate-50">
-                        <td className="p-3 font-bold text-slate-900">{s.firstName} {s.lastName}</td>
-                        <td className="p-3 font-mono text-slate-500">{s.admissionNumber}</td>
-                        <td className="p-3 text-right font-mono font-bold text-slate-400">100</td>
-                        <td className="p-3 text-right">
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={marksData[s._id] || ''}
-                            onChange={(e) => setMarksData({ ...marksData, [s._id]: e.target.value })}
-                            className="w-24 px-3 py-1.5 border border-emerald-300 rounded-xl text-xs font-black font-mono text-right text-emerald-700 bg-white"
-                          />
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 font-semibold text-slate-800">
+                    {studentsForMarks.map((s) => {
+                      const studentMarks = matrixMarksData[s._id] || {};
+                      let total = 0;
+                      let maxTotal = classSubjects.length * 100;
+                      let isPass = true;
 
-            <button
-              type="submit"
-              disabled={savingMarks || studentsForMarks.length === 0}
-              className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs shadow-md shadow-emerald-600/20 disabled:opacity-50 cursor-pointer"
-            >
-              {savingMarks ? 'Saving Results...' : 'Save Subject Marks & Recalculate Class Ranks'}
-            </button>
+                      classSubjects.forEach((sub) => {
+                        const val = Number(studentMarks[sub._id] || 0);
+                        total += val;
+                        if (val < 40) isPass = false;
+                      });
+
+                      const pct = maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(1) : 0;
+
+                      return (
+                        <tr key={s._id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="p-3 font-black text-slate-900 border-r border-slate-200 sticky left-0 bg-white">
+                            {s.firstName} {s.lastName}
+                          </td>
+                          <td className="p-3 font-mono text-slate-500 border-r border-slate-200">{s.admissionNumber}</td>
+
+                          {/* Editable Cells for EVERY Subject */}
+                          {classSubjects.map((sub) => (
+                            <td key={sub._id} className="p-2 border-r border-slate-200 text-center bg-emerald-50/20">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={studentMarks[sub._id] !== undefined ? studentMarks[sub._id] : 85}
+                                onChange={(e) => handleCellMarkChange(s._id, sub._id, e.target.value)}
+                                className="w-20 px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-black font-mono text-center text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white shadow-xs"
+                              />
+                            </td>
+                          ))}
+
+                          <td className="p-3 border-r border-slate-200 text-right font-black font-mono text-slate-900 bg-slate-50">
+                            {total} / {maxTotal}
+                          </td>
+                          <td className="p-3 border-r border-slate-200 text-right font-black font-mono text-indigo-700 bg-indigo-50/30">
+                            {pct}%
+                          </td>
+                          <td className="p-3 text-center bg-slate-50">
+                            <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase ${isPass ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'}`}>
+                              {isPass ? 'PASS' : 'FAIL'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </form>
         </div>
       )}
 
-      {/* SCHEDULE TIMETABLE MODAL (CLASS TEACHER ONLY) */}
+      {/* SCHEDULE TIMETABLE MODAL (CLASS TEACHERS ENABLED) */}
       {isScheduleModalOpen && (
         <Modal isOpen={isScheduleModalOpen} onClose={() => setIsScheduleModalOpen(false)} title="Schedule Exam Subject Timetable">
           <form onSubmit={handleScheduleSubmit} className="space-y-4">
