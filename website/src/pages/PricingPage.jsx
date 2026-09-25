@@ -1,14 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  CheckCircle2,
-  Sparkles,
-  ArrowRight,
-  ShieldCheck,
-  Zap,
-  HelpCircle,
-  ChevronDown
-} from 'lucide-react';
+import { CheckCircle2, ShieldCheck, Zap, ArrowRight, ChevronDown } from 'lucide-react';
 
 export default function PricingPage({ onOpenTrialModal }) {
   const [isAnnual, setIsAnnual] = useState(true);
@@ -17,7 +9,7 @@ export default function PricingPage({ onOpenTrialModal }) {
   const plans = [
     {
       name: 'Starter Plan',
-      desc: 'Ideal for small primary schools and coaching academies.',
+      desc: 'Ideal for small primary schools and coaching institutes.',
       monthlyPrice: '₹ 3,499',
       annualPrice: '₹ 2,799',
       studentLimit: 'Up to 300 Enrolled Students',
@@ -30,8 +22,6 @@ export default function PricingPage({ onOpenTrialModal }) {
         'Standard Email Support',
       ],
       popular: false,
-      buttonText: 'Start 14-Day Free Trial',
-      buttonStyle: 'bg-slate-900 hover:bg-slate-800 text-white border border-slate-700',
     },
     {
       name: 'Growth Pro',
@@ -50,8 +40,6 @@ export default function PricingPage({ onOpenTrialModal }) {
         'Free Data Migration from Legacy ERP',
       ],
       popular: true,
-      buttonText: 'Start Free Trial (Most Popular)',
-      buttonStyle: 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-sky-500 hover:from-indigo-500 hover:to-sky-400 text-white shadow-xl shadow-indigo-600/25',
     },
     {
       name: 'Enterprise Trust',
@@ -69,8 +57,6 @@ export default function PricingPage({ onOpenTrialModal }) {
         '24/7 VIP Account Executive Support',
       ],
       popular: false,
-      buttonText: 'Contact Sales / Custom Quote',
-      buttonStyle: 'bg-slate-900 hover:bg-slate-800 text-white border border-slate-700',
     },
   ];
 
@@ -98,51 +84,44 @@ export default function PricingPage({ onOpenTrialModal }) {
     {
       q: 'Are there any hidden setup fees or per-student extra charges?',
       a: 'No. Our pricing is completely transparent. The monthly or annual price includes all server hosting, cloud database storage, updates, and customer support.'
-    },
-    {
-      q: 'What hardware or devices are required to run Greenwood ERP?',
-      a: 'Greenwood ERP is 100% web-based. It runs on any standard Web Browser on Windows laptops, Macs, Chromebooks, iPads, and Android smartphones.'
-    },
-    {
-      q: 'What happens after our 14-day free trial ends?',
-      a: 'After 14 days, you can select any of our Starter, Growth Pro, or Enterprise plans. All data entered during your trial will remain safely preserved.'
     }
   ];
 
   return (
-    <div className="pt-32 pb-24 space-y-20">
+    <div className="pt-28 pb-20 space-y-16 text-left">
       
       {/* Header */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold uppercase tracking-wider">
-          <Zap className="w-3.5 h-3.5 text-amber-300" />
-          <span>Simple & Transparent Pricing</span>
-        </div>
-        <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight">
-          Predictable Plans Built For <span className="text-gradient-primary">Every School Size</span>
-        </h1>
-        <p className="text-slate-400 text-base max-w-2xl mx-auto">
-          No hidden setup costs. No extra per-student billing. Choose the plan that fits your institution.
-        </p>
+      <section className="bg-gn-hero border-b border-sky-200/80 py-16 text-center">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3">
+          <span className="text-xs font-bold uppercase tracking-wider text-sky-700 bg-white px-3 py-1 rounded-full border border-sky-200">
+            Transparent Investment
+          </span>
+          <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
+            Simple Plans Built For <span className="text-sky-600">Every School Size</span>
+          </h1>
+          <p className="text-slate-600 text-sm max-w-xl mx-auto">
+            No hidden setup costs. No per-student extra fees. All software updates and cloud backups included.
+          </p>
 
-        {/* Annual / Monthly Toggle */}
-        <div className="flex items-center justify-center gap-4 pt-6">
-          <span className={`text-xs font-semibold ${!isAnnual ? 'text-white' : 'text-slate-400'}`}>Monthly Billing</span>
-          <button
-            onClick={() => setIsAnnual(!isAnnual)}
-            className="w-14 h-8 rounded-full bg-slate-900 p-1 border border-slate-800 transition-colors relative cursor-pointer"
-          >
-            <div
-              className={`w-6 h-6 rounded-full bg-indigo-500 transition-transform ${
-                isAnnual ? 'translate-x-6 bg-sky-400' : 'translate-x-0'
-              }`}
-            />
-          </button>
-          <div className="flex items-center gap-1.5">
-            <span className={`text-xs font-semibold ${isAnnual ? 'text-white' : 'text-slate-400'}`}>Annual Billing</span>
-            <span className="text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-              Save 20%
-            </span>
+          {/* Billing Toggle */}
+          <div className="flex items-center justify-center gap-4 pt-4">
+            <span className={`text-xs font-bold ${!isAnnual ? 'text-slate-900' : 'text-slate-500'}`}>Monthly Billing</span>
+            <button
+              onClick={() => setIsAnnual(!isAnnual)}
+              className="w-14 h-8 rounded-full bg-slate-200 p-1 border border-slate-300 transition-colors relative cursor-pointer"
+            >
+              <div
+                className={`w-6 h-6 rounded-full bg-sky-600 transition-transform ${
+                  isAnnual ? 'translate-x-6' : 'translate-x-0'
+                }`}
+              />
+            </button>
+            <div className="flex items-center gap-1.5">
+              <span className={`text-xs font-bold ${isAnnual ? 'text-slate-900' : 'text-slate-500'}`}>Annual Billing</span>
+              <span className="text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full">
+                Save 20%
+              </span>
+            </div>
           </div>
         </div>
       </section>
@@ -153,42 +132,42 @@ export default function PricingPage({ onOpenTrialModal }) {
           {plans.map((p, idx) => (
             <div
               key={idx}
-              className={`rounded-2xl p-8 flex flex-col justify-between text-left relative transition-all ${
+              className={`p-8 rounded-xl bg-white border flex flex-col justify-between relative transition-all ${
                 p.popular
-                  ? 'bg-slate-900 border-2 border-indigo-500/80 shadow-2xl shadow-indigo-950/80 scale-105 z-10'
-                  : 'bg-slate-900/40 border border-slate-800 hover:border-slate-700'
+                  ? 'border-2 border-sky-500 shadow-xl scale-105 z-10'
+                  : 'border-slate-200 shadow-clean'
               }`}
             >
               {p.popular && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-indigo-500 to-sky-400 text-slate-950 font-black text-[10px] uppercase tracking-wider shadow-md">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-sky-600 text-white font-bold text-[10px] uppercase tracking-wider shadow-sm">
                   ★ Most Popular Choice
                 </div>
               )}
 
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-xl font-black text-white">{p.name}</h3>
-                  <p className="text-xs text-slate-400 mt-1">{p.desc}</p>
+                  <h3 className="text-xl font-black text-slate-900">{p.name}</h3>
+                  <p className="text-xs text-slate-500 mt-1">{p.desc}</p>
                 </div>
 
-                <div className="border-y border-slate-800/80 py-4">
+                <div className="border-y border-slate-100 py-4">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-white font-['Outfit']">
+                    <span className="text-4xl font-black text-slate-900 font-['Outfit']">
                       {isAnnual ? p.annualPrice : p.monthlyPrice}
                     </span>
-                    <span className="text-xs text-slate-400 font-semibold">/ month</span>
+                    <span className="text-xs text-slate-500 font-semibold">/ month</span>
                   </div>
-                  <div className="text-xs text-indigo-400 font-semibold mt-1.5 flex items-center gap-1">
+                  <div className="text-xs text-sky-600 font-bold mt-1 flex items-center gap-1">
                     <ShieldCheck className="w-3.5 h-3.5" />
                     <span>{p.studentLimit}</span>
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">What's Included</div>
+                <div className="space-y-2.5">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Included Services</div>
                   {p.features.map((f, fIdx) => (
-                    <div key={fIdx} className="flex items-start gap-2.5 text-xs text-slate-300">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <div key={fIdx} className="flex items-start gap-2 text-xs text-slate-700">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                       <span>{f}</span>
                     </div>
                   ))}
@@ -198,39 +177,41 @@ export default function PricingPage({ onOpenTrialModal }) {
               <div className="pt-8">
                 <button
                   onClick={onOpenTrialModal}
-                  className={`w-full py-3.5 text-xs font-bold uppercase tracking-wider rounded-xl cursor-pointer transition-all flex items-center justify-center gap-2 ${p.buttonStyle}`}
+                  className={`w-full py-3 text-xs font-bold uppercase tracking-wider rounded-lg cursor-pointer transition-all flex items-center justify-center gap-2 ${
+                    p.popular
+                      ? 'bg-sky-600 hover:bg-sky-700 text-white shadow-md'
+                      : 'bg-slate-700 hover:bg-slate-800 text-white'
+                  }`}
                 >
-                  <span>{p.buttonText}</span>
+                  <span>Request Demo / Start Trial</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
+
             </div>
           ))}
         </div>
       </section>
 
-      {/* FAQ Accordion Section */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
-        <div className="space-y-2">
-          <div className="text-xs font-bold uppercase tracking-wider text-indigo-400">Frequently Asked Questions</div>
-          <h2 className="text-3xl font-black text-white">Got Questions? We Have Answers.</h2>
+      {/* FAQ Accordion */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        <div className="text-center space-y-1">
+          <h2 className="text-2xl font-black text-slate-900">Frequently Asked Questions</h2>
+          <p className="text-xs text-slate-500">Everything you need to know about Greenwood ERP onboarding.</p>
         </div>
 
-        <div className="space-y-3 text-left">
+        <div className="space-y-3">
           {faqs.map((faq, idx) => (
-            <div
-              key={idx}
-              className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 transition-colors"
-            >
+            <div key={idx} className="p-4 rounded-lg bg-white border border-slate-200">
               <button
                 onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                className="w-full flex items-center justify-between font-bold text-sm text-white text-left cursor-pointer"
+                className="w-full flex items-center justify-between font-bold text-xs text-slate-800 text-left cursor-pointer"
               >
                 <span>{faq.q}</span>
-                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${openFaq === idx ? 'rotate-180 text-indigo-400' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${openFaq === idx ? 'rotate-180 text-sky-600' : ''}`} />
               </button>
               {openFaq === idx && (
-                <p className="text-xs text-slate-300 mt-3 pt-3 border-t border-slate-800/80 leading-relaxed">
+                <p className="text-xs text-slate-600 mt-2.5 pt-2.5 border-t border-slate-100 leading-relaxed">
                   {faq.a}
                 </p>
               )}

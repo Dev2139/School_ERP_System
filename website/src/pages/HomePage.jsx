@@ -1,195 +1,224 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  Sparkles,
-  ArrowRight,
-  ShieldCheck,
+  GraduationCap,
   CheckCircle2,
-  Play,
-  FileSpreadsheet,
+  BookOpen,
+  Award,
   CreditCard,
   Calendar,
   Users,
-  Award,
-  GraduationCap,
-  BookOpen,
-  ChevronRight,
-  Star,
-  Quote
+  FileText,
+  ShieldCheck,
+  RefreshCw,
+  Infinity as InfinityIcon,
+  Sparkles,
+  ArrowRight,
+  Layers,
+  FileSpreadsheet
 } from 'lucide-react';
 
 export default function HomePage({ onOpenTrialModal }) {
-  const [activeTab, setActiveTab] = useState('matrix');
+  const navigate = useNavigate();
+
+  const handleDemoClick = () => {
+    if (onOpenTrialModal) onOpenTrialModal();
+    else navigate('/demo');
+  };
 
   return (
-    <div className="space-y-24 pb-16">
+    <div className="space-y-16 pb-12">
       
       {/* ------------------------------------------------------------------- */}
-      {/* HERO SECTION */}
+      {/* 1. HERO BANNER SECTION (MATCHING SCREENSHOT 1) */}
       {/* ------------------------------------------------------------------- */}
-      <section className="relative pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden">
-        
-        {/* Subtle Ambient Background Lighting */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-indigo-600/10 rounded-full blur-[150px] pointer-events-none" />
-        <div className="absolute top-1/3 right-10 w-[450px] h-[350px] bg-sky-500/10 rounded-full blur-[130px] pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          
-          {/* Release Badge */}
-          <div className="flex justify-center mb-6">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold">
-              <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-              </span>
-              <span>Greenwood ERP v2.0 Released</span>
-              <span className="text-slate-500 font-normal">|</span>
-              <span className="text-sky-400 font-medium">Enterprise Edition</span>
-            </div>
-          </div>
-
-          {/* Main Headline */}
-          <div className="max-w-4xl mx-auto space-y-6">
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.1] text-white">
-              The Modern School Operating System For <span className="text-gradient-primary">K-12 Institutions</span>
-            </h1>
-
-            <p className="text-base sm:text-xl text-slate-300 font-normal max-w-2xl mx-auto leading-relaxed">
-              Unify fee counter collection, teacher payroll, class timetable scheduling, and all-subject gradebook matrices into one intuitive cloud platform.
-            </p>
-
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <button
-                onClick={onOpenTrialModal}
-                className="w-full sm:w-auto px-8 py-4 text-sm font-bold text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-sky-500 hover:from-indigo-500 hover:to-sky-400 rounded-xl shadow-xl shadow-indigo-600/25 hover:shadow-indigo-500/40 hover:scale-[1.02] transition-all cursor-pointer flex items-center justify-center gap-2.5"
-              >
-                <Sparkles className="w-4.5 h-4.5 text-amber-300" />
-                <span>Start 14-Day Free Trial</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-
-              <Link
-                to="/demo"
-                className="w-full sm:w-auto px-7 py-4 text-sm font-semibold text-slate-200 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-xl transition-all flex items-center justify-center gap-2"
-              >
-                <Play className="w-4 h-4 text-sky-400 fill-sky-400" />
-                <span>Explore Interactive Demo</span>
-              </Link>
-            </div>
-
-            {/* Value Guarantees */}
-            <div className="flex flex-wrap items-center justify-center gap-6 pt-3 text-xs text-slate-400">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>No Credit Card Needed</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>5-Minute School Setup</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>24/7 Dedicated Support</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Product UI Mockup Simulation */}
-          <div className="mt-16 max-w-5xl mx-auto rounded-2xl p-2 bg-slate-900/60 border border-slate-800 shadow-2xl">
-            <div className="bg-slate-950 rounded-xl overflow-hidden border border-slate-800/80">
+      <section className="bg-gn-hero pt-32 pb-20 border-b border-sky-200/80 relative overflow-hidden text-left">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            {/* Left Column: Title, Subtitle, Badges */}
+            <div className="lg:col-span-7 space-y-6">
               
-              {/* Window Header */}
-              <div className="bg-slate-900/90 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-rose-500/80" />
-                  <div className="w-3 h-3 rounded-full bg-amber-500/80" />
-                  <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
-                </div>
-                <div className="px-3 py-0.5 rounded-md bg-slate-950 text-[11px] font-mono text-slate-400 border border-slate-800 flex items-center gap-2">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>app.greenwooderp.com / Main Dashboard</span>
-                </div>
-                <div className="text-[10px] font-bold text-indigo-400 uppercase">Live Preview</div>
-              </div>
-
-              {/* Interface Content Simulator */}
-              <div className="p-6 space-y-6 text-left">
+              <div className="space-y-2">
+                <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+                  School & Institution <br />
+                  Management Software <span className="text-sky-600 font-extrabold">(GREENWOOD ERP)</span>
+                </h1>
                 
-                {/* Metric Summary Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800/80">
-                    <div className="text-[11px] font-semibold text-slate-400 uppercase">Total Enrolled</div>
-                    <div className="text-2xl font-black text-white mt-1">1,248 Students</div>
-                    <div className="text-[10px] text-emerald-400 font-semibold mt-0.5">Classes 1 - 10</div>
-                  </div>
-                  <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800/80">
-                    <div className="text-[11px] font-semibold text-slate-400 uppercase">Counter Fee Portal</div>
-                    <div className="text-2xl font-black text-white mt-1 font-mono">₹ 14,85,000</div>
-                    <div className="text-[10px] text-emerald-400 font-semibold mt-0.5">Official PDF Receipts</div>
-                  </div>
-                  <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800/80">
-                    <div className="text-[11px] font-semibold text-slate-400 uppercase">Teaching Staff</div>
-                    <div className="text-2xl font-black text-white mt-1">42 Faculty</div>
-                    <div className="text-[10px] text-sky-400 font-semibold mt-0.5">Payroll Disbursed</div>
-                  </div>
-                  <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800/80">
-                    <div className="text-[11px] font-semibold text-slate-400 uppercase">Exam Gradebook</div>
-                    <div className="text-2xl font-black text-white mt-1">Term 1 Active</div>
-                    <div className="text-[10px] text-amber-400 font-semibold mt-0.5">Excel Matrix Ready</div>
-                  </div>
-                </div>
-
-                {/* Gradebook Matrix Table Preview */}
-                <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                      <FileSpreadsheet className="w-4 h-4 text-indigo-400" />
-                      <span>Class 1 All-Subject Gradebook Matrix</span>
-                    </div>
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold">Auto-Ranked</span>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs font-mono">
-                      <thead className="bg-slate-950 text-slate-400 uppercase text-[10px]">
-                        <tr>
-                          <th className="p-2.5">Student Name</th>
-                          <th className="p-2.5">Mathematics</th>
-                          <th className="p-2.5">Hindi</th>
-                          <th className="p-2.5">Physics</th>
-                          <th className="p-2.5">Chemistry</th>
-                          <th className="p-2.5">Computer</th>
-                          <th className="p-2.5 text-right">Percentage</th>
-                          <th className="p-2.5 text-center">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-800/80 text-slate-200">
-                        <tr>
-                          <td className="p-2.5 font-bold text-white font-sans">Dev Patel</td>
-                          <td className="p-2.5 text-emerald-400 font-bold">95</td>
-                          <td className="p-2.5 text-emerald-400 font-bold">88</td>
-                          <td className="p-2.5 text-emerald-400 font-bold">92</td>
-                          <td className="p-2.5 text-emerald-400 font-bold">90</td>
-                          <td className="p-2.5 text-emerald-400 font-bold">98</td>
-                          <td className="p-2.5 text-right text-indigo-300 font-bold">92.6%</td>
-                          <td className="p-2.5 text-center"><span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-[10px] font-sans font-bold">PASS</span></td>
-                        </tr>
-                        <tr>
-                          <td className="p-2.5 font-bold text-white font-sans">Priya Sharma</td>
-                          <td className="p-2.5 text-emerald-400 font-bold">90</td>
-                          <td className="p-2.5 text-emerald-400 font-bold">94</td>
-                          <td className="p-2.5 text-emerald-400 font-bold">89</td>
-                          <td className="p-2.5 text-emerald-400 font-bold">91</td>
-                          <td className="p-2.5 text-emerald-400 font-bold">95</td>
-                          <td className="p-2.5 text-right text-indigo-300 font-bold">91.8%</td>
-                          <td className="p-2.5 text-center"><span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded text-[10px] font-sans font-bold">PASS</span></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
+                <p className="text-base sm:text-xl text-slate-700 font-semibold">
+                  <strong className="text-slate-900 font-bold">Paperless Solution</strong> for K-12 Schools, CBSE/ICSE Institutes, Autonomous Schools.
+                </p>
               </div>
+
+              {/* Tag Badges (NEP-2020, Digi-Locker, Admit-Card, etc.) */}
+              <div className="flex flex-wrap items-center gap-2.5 pt-2">
+                {[
+                  'NEP-2020',
+                  'Digi-Locker',
+                  'Admit-Card',
+                  'Master-Gradebook',
+                  'Fee-Counter',
+                  'CBSE-Affiliated',
+                  'Official-PDF-Receipts',
+                  'Sunday-Skip-Timetable',
+                  'Faculty-Payroll'
+                ].map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className="px-3.5 py-1.5 rounded-lg bg-sky-200/80 text-sky-900 border border-sky-300 text-xs font-bold shadow-2xs"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+
+              {/* CTAs */}
+              <div className="pt-4 flex flex-wrap items-center gap-4">
+                <button
+                  onClick={handleDemoClick}
+                  className="px-7 py-3.5 bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider rounded-lg shadow-md transition-all cursor-pointer flex items-center gap-2"
+                >
+                  <span>Request Live Demo</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
+                <Link
+                  to="/features"
+                  className="px-6 py-3.5 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs border border-slate-300 rounded-lg shadow-2xs transition-all flex items-center gap-2"
+                >
+                  <span>View All Modules</span>
+                </Link>
+              </div>
+
+            </div>
+
+            {/* Right Column: Graphic Circle Logo Showcase Badge */}
+            <div className="lg:col-span-5 flex justify-center">
+              <div className="relative w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-gradient-to-tr from-sky-300/40 via-blue-200/50 to-indigo-300/40 p-6 flex items-center justify-center border-4 border-white/60 shadow-xl">
+                <div className="w-full h-full rounded-full bg-sky-400/20 p-6 flex items-center justify-center border-2 border-sky-300/50">
+                  <div className="w-full h-full rounded-full bg-white shadow-2xl flex flex-col items-center justify-center border-4 border-sky-500/30 p-4 text-center group hover:scale-105 transition-transform">
+                    
+                    {/* Circle Brand Symbol */}
+                    <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-gradient-to-tr from-sky-500 via-sky-400 to-indigo-600 flex items-center justify-center p-1 shadow-lg">
+                      <div className="w-full h-full bg-white rounded-full flex flex-col items-center justify-center">
+                        <GraduationCap className="w-12 h-12 text-sky-600" />
+                        <span className="text-xs font-black text-sky-700 font-['Outfit'] mt-1">GW</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <div className="text-base font-black text-slate-800 uppercase tracking-tight font-['Outfit']">GREENWOOD</div>
+                      <div className="text-[11px] font-bold text-sky-600 uppercase">Enterprise Edition 2026</div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------------------- */}
+      {/* 2. ABOUT GREENWOOD ERP SECTION (MATCHING SCREENSHOT 2) */}
+      {/* ------------------------------------------------------------------- */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4 pt-4">
+        <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight">
+          About <span className="text-sky-600">GREENWOOD ERP</span>
+        </h2>
+        <p className="text-slate-600 text-sm leading-relaxed max-w-4xl mx-auto">
+          Greenwood ERP is a full-stack solution for School Automation which covers all aspects of K-12 Schools & Colleges. It integrates all the processes and rules of councils. It helps the school to build, manage, and extend its digital campus. It helps stakeholders, institutes & systems to interact easily across the campus environment which provides a personalized educational experience. The main thing is it helps the school to become system-oriented instead of person-oriented by making automates a bunch of tasks and follow-ups of work by System.
+        </p>
+      </section>
+
+      {/* ------------------------------------------------------------------- */}
+      {/* 3. WHY GREENWOOD ERP? VS UNLIMITED SERVICES (MATCHING SCREENSHOT 2) */}
+      {/* ------------------------------------------------------------------- */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+          
+          {/* Left Column: Why Greenwood ERP? */}
+          <div className="p-8 rounded-xl bg-sky-50/80 border border-sky-200/80 space-y-6 shadow-2xs">
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
+              <GraduationCap className="w-6 h-6 text-sky-600" />
+              <span>Why <span className="text-sky-600">GREENWOOD ERP</span> ?</span>
+            </h3>
+
+            <div className="space-y-5">
+              
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-white rounded-lg border border-sky-200 text-sky-600 shrink-0 shadow-2xs">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">Domain Knowledge Expert</h4>
+                  <p className="text-xs text-slate-600 mt-0.5">Greenwood ERP is developed by a team of academicians and school administration experts.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-white rounded-lg border border-sky-200 text-sky-600 shrink-0 shadow-2xs">
+                  <RefreshCw className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">Periodically Technology Upgradation</h4>
+                  <p className="text-xs text-slate-600 mt-0.5">Upgradation of latest technologies every year for optimal security and speed.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-white rounded-lg border border-sky-200 text-sky-600 shrink-0 shadow-2xs">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">Product led by Partners</h4>
+                  <p className="text-xs text-slate-600 mt-0.5">Led, nurtured, monitored, and supported by core engineering team at Devdhara Technologies.</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Right Column: Unlimited Services */}
+          <div className="p-8 rounded-xl bg-white border border-slate-200 space-y-6 shadow-clean">
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
+              <InfinityIcon className="w-6 h-6 text-sky-500" />
+              <span><span className="text-sky-500">Unlimited</span> Services</span>
+            </h3>
+
+            <div className="space-y-5">
+              
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-sky-50 rounded-lg border border-sky-100 text-sky-500 shrink-0">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">Unlimited Changes</h4>
+                  <p className="text-xs text-slate-600 mt-0.5">Unlimited changes in existing modules to match evolving board guidelines.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-sky-50 rounded-lg border border-sky-100 text-sky-500 shrink-0">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">Unlimited Development</h4>
+                  <p className="text-xs text-slate-600 mt-0.5">Unlimited development of new custom school modules based on institutional requirements.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-sky-50 rounded-lg border border-sky-100 text-sky-500 shrink-0">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">Unlimited Training</h4>
+                  <p className="text-xs text-slate-600 mt-0.5">Unlimited training to school staff, teachers, accountants, and administrators.</p>
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -197,187 +226,165 @@ export default function HomePage({ onOpenTrialModal }) {
       </section>
 
       {/* ------------------------------------------------------------------- */}
-      {/* KEY FEATURE HIGHLIGHTS GRID */}
+      {/* 4. LIST OF MODULES SECTION (MATCHING SCREENSHOT 3) */}
       {/* ------------------------------------------------------------------- */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-12">
-        <div className="max-w-3xl mx-auto space-y-3">
-          <div className="text-xs font-bold uppercase tracking-wider text-indigo-400">Core Capabilities</div>
-          <h2 className="text-3xl sm:text-5xl font-black text-white">
-            Built To Solve Real School Administrative Friction
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pt-4">
+        
+        <div className="text-center space-y-2">
+          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+            List of <span className="text-sky-600">Modules</span>
           </h2>
-          <p className="text-slate-400 text-sm">
-            Everything your school needs across Academics, Finance, Examinations, and Staff Management.
+          <p className="text-slate-600 text-xs sm:text-sm font-medium">
+            The <span className="text-sky-600 font-bold">Skeleton</span> to manage School with <span className="text-sky-600 font-bold">Optimum Resources</span>
           </p>
         </div>
 
+        {/* 6 Module Set Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
           
-          <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-indigo-500/40 transition-all space-y-3">
-            <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl w-fit border border-emerald-500/20">
-              <CreditCard className="w-5 h-5" />
+          {/* Module Set I */}
+          <div className="p-6 rounded-xl bg-white border border-slate-200/90 shadow-clean shadow-clean-hover relative flex flex-col justify-between">
+            <div className="space-y-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-white px-3 py-1 rounded-md">
+                Module Set - I
+              </span>
+              <div>
+                <h3 className="text-lg font-bold text-sky-600">Basic & Academic Modules</h3>
+                <p className="text-xs text-slate-500 mt-1">These are basic modules necessary to run Greenwood ERP.</p>
+              </div>
+
+              <div className="space-y-2 pt-2 text-xs text-slate-700">
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> School Setup & Standard Configuration</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Course & Curriculum Management</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Student Management with Student Panel</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Staff Management with Staff Panel</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Web Portals for Student & Staff</div>
+              </div>
             </div>
-            <h3 className="text-base font-bold text-white">Accountant Counter Fee Portal</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Dedicated Accountant role (`account@school.com`) with instant student counter lookup, standard-wise class fee configuration, and official watermarked PDF receipts.
-            </p>
-            <Link to="/features" className="inline-flex items-center gap-1 text-xs text-indigo-400 font-bold hover:underline pt-2">
-              Learn about Fee Counter <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
           </div>
 
-          <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-indigo-500/40 transition-all space-y-3">
-            <div className="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl w-fit border border-indigo-500/20">
-              <FileSpreadsheet className="w-5 h-5" />
+          {/* Module Set II */}
+          <div className="p-6 rounded-xl bg-white border border-slate-200/90 shadow-clean shadow-clean-hover relative flex flex-col justify-between">
+            <div className="space-y-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-white px-3 py-1 rounded-md">
+                Module Set - II
+              </span>
+              <div>
+                <h3 className="text-lg font-bold text-sky-600">Exam & Gradebook Management</h3>
+                <p className="text-xs text-slate-500 mt-1">These modules deal with examination and gradebook matrix.</p>
+              </div>
+
+              <div className="space-y-2 pt-2 text-xs text-slate-700">
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> All-Subject Master Gradebook Matrix</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Class Teacher Timetable & Sunday Skip</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Digital Printable Hall Tickets / Admit Cards</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Automatic Class Rank & Percentage Scoring</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Strict 1-Student Report Card Privacy</div>
+              </div>
             </div>
-            <h3 className="text-base font-bold text-white">All-Subject Master Gradebook</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Fill student marks across all subjects side-by-side in one spreadsheet matrix grid. Automatic class ranking, percentage scores, and report card generation.
-            </p>
-            <Link to="/features" className="inline-flex items-center gap-1 text-xs text-indigo-400 font-bold hover:underline pt-2">
-              Explore Gradebook Matrix <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
           </div>
 
-          <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-indigo-500/40 transition-all space-y-3">
-            <div className="p-3 bg-sky-500/10 text-sky-400 rounded-xl w-fit border border-sky-500/20">
-              <Calendar className="w-5 h-5" />
+          {/* Module Set III */}
+          <div className="p-6 rounded-xl bg-white border border-slate-200/90 shadow-clean shadow-clean-hover relative flex flex-col justify-between">
+            <div className="space-y-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-white px-3 py-1 rounded-md">
+                Module Set - III
+              </span>
+              <div>
+                <h3 className="text-lg font-bold text-sky-600">Accountant Fee Counter Portal</h3>
+                <p className="text-xs text-slate-500 mt-1">Deals with counter fee collection and official receipts.</p>
+              </div>
+
+              <div className="space-y-2 pt-2 text-xs text-slate-700">
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Dedicated Accountant Role (`account@school.com`)</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Instant Counter Student Lookup & Fee Audit</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Standard Class Fee Setups (Class 1 to 10)</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Cash, UPI, Cheque & Bank Payment Modes</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Watermarked Downloadable PDF Fee Receipts</div>
+              </div>
             </div>
-            <h3 className="text-base font-bold text-white">Smart Exam Timetable Scheduler</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Class Teachers schedule exam timetables for their assigned class standard. Smart date incrementing automatically advances +1 day and skips Sundays.
-            </p>
-            <Link to="/features" className="inline-flex items-center gap-1 text-xs text-indigo-400 font-bold hover:underline pt-2">
-              See Timetable Features <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
           </div>
 
-          <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-indigo-500/40 transition-all space-y-3">
-            <div className="p-3 bg-purple-500/10 text-purple-400 rounded-xl w-fit border border-purple-500/20">
-              <GraduationCap className="w-5 h-5" />
+          {/* Module Set IV */}
+          <div className="p-6 rounded-xl bg-white border border-slate-200/90 shadow-clean shadow-clean-hover relative flex flex-col justify-between">
+            <div className="space-y-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-white px-3 py-1 rounded-md">
+                Module Set - IV
+              </span>
+              <div>
+                <h3 className="text-lg font-bold text-sky-600">Faculty & Payroll Management</h3>
+                <p className="text-xs text-slate-500 mt-1">Manages staff directory and monthly salary disbursements.</p>
+              </div>
+
+              <div className="space-y-2 pt-2 text-xs text-slate-700">
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Centralized Teaching Staff Directory</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Qualification & Assigned Subject Sync</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> One-Click Monthly Salary Disbursements</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Staff Payroll History & Audit Logs</div>
+              </div>
             </div>
-            <h3 className="text-base font-bold text-white">Digital Admit Cards & Reports</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Printable Hall Tickets / Admit Cards for students with seat numbers. Strict 1-student result privacy ensures students only view their personal report card.
-            </p>
-            <Link to="/features" className="inline-flex items-center gap-1 text-xs text-indigo-400 font-bold hover:underline pt-2">
-              Admit Card Portal <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
           </div>
 
-          <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-indigo-500/40 transition-all space-y-3">
-            <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl w-fit border border-amber-500/20">
-              <Users className="w-5 h-5" />
+          {/* Module Set V */}
+          <div className="p-6 rounded-xl bg-white border border-slate-200/90 shadow-clean shadow-clean-hover relative flex flex-col justify-between">
+            <div className="space-y-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-white px-3 py-1 rounded-md">
+                Module Set - V
+              </span>
+              <div>
+                <h3 className="text-lg font-bold text-sky-600">Homework & Submissions</h3>
+                <p className="text-xs text-slate-500 mt-1">Deals with subject-specific homework and online uploads.</p>
+              </div>
+
+              <div className="space-y-2 pt-2 text-xs text-slate-700">
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Subject Teacher HW Submission Controls</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Online Submission Toggle for Students</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Student Assignment Upload Portal</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Teacher Evaluation & Feedback</div>
+              </div>
             </div>
-            <h3 className="text-base font-bold text-white">Faculty Directory & Payroll</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Centralized teacher directory with assigned subjects. Monthly payroll processing and teacher salary disbursement tracking with automated audit logs.
-            </p>
-            <Link to="/features" className="inline-flex items-center gap-1 text-xs text-indigo-400 font-bold hover:underline pt-2">
-              Faculty Management <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
           </div>
 
-          <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800/80 hover:border-indigo-500/40 transition-all space-y-3">
-            <div className="p-3 bg-rose-500/10 text-rose-400 rounded-xl w-fit border border-rose-500/20">
-              <BookOpen className="w-5 h-5" />
+          {/* Module Set VI */}
+          <div className="p-6 rounded-xl bg-white border border-slate-200/90 shadow-clean shadow-clean-hover relative flex flex-col justify-between">
+            <div className="space-y-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-white px-3 py-1 rounded-md">
+                Module Set - VI
+              </span>
+              <div>
+                <h3 className="text-lg font-bold text-sky-600">Accreditation & Communication</h3>
+                <p className="text-xs text-slate-500 mt-1">Data preparation for school accreditation and notices.</p>
+              </div>
+
+              <div className="space-y-2 pt-2 text-xs text-slate-700">
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Digital Circulars & Notice Board</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Parent Portal & Student Mentoring</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> School Calendar & Event Schedule</div>
+                <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Audit Logging & Data Compliance</div>
+              </div>
             </div>
-            <h3 className="text-base font-bold text-white">Subject-Specific Homework</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Subject teachers issue homework exclusively for their taught subjects. Online submission buttons are controlled by teacher submission toggles.
-            </p>
-            <Link to="/features" className="inline-flex items-center gap-1 text-xs text-indigo-400 font-bold hover:underline pt-2">
-              Homework Portal <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
           </div>
 
         </div>
+
       </section>
 
       {/* ------------------------------------------------------------------- */}
-      {/* TESTIMONIALS & TRUST SECTION */}
+      {/* 5. REQUEST DEMO CTA BANNER */}
       {/* ------------------------------------------------------------------- */}
-      <section className="bg-slate-900/30 border-y border-slate-900 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-12">
-          
-          <div className="max-w-2xl mx-auto space-y-3">
-            <div className="text-xs font-bold uppercase tracking-wider text-sky-400">Customer Success</div>
-            <h2 className="text-3xl font-black text-white">Trusted By School Leaders Across India</h2>
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <div className="p-8 sm:p-10 rounded-2xl bg-slate-900 text-white flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl text-left">
+          <div className="space-y-1">
+            <h3 className="text-2xl font-black">Ready To Digitally Transform Your School?</h3>
+            <p className="text-xs text-slate-300">Request a live demo or start a 14-day free trial for your institution today.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-            
-            <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-4">
-              <div className="flex text-amber-400 gap-1">
-                {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400" />)}
-              </div>
-              <p className="text-xs text-slate-300 italic leading-relaxed">
-                "The All-Subject Master Gradebook Matrix and Sunday-skipping timetable scheduler saved our teachers over 40 hours during term exams!"
-              </p>
-              <div className="pt-2 border-t border-slate-900">
-                <div className="text-xs font-bold text-white">Dr. Rajesh K. Mehta</div>
-                <div className="text-[11px] text-indigo-400">Principal, Greenwood International</div>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-4">
-              <div className="flex text-amber-400 gap-1">
-                {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400" />)}
-              </div>
-              <p className="text-xs text-slate-300 italic leading-relaxed">
-                "The Accountant Counter Portal (`account@school.com`) with instant PDF receipts completely eliminated long counter lines on fee day."
-              </p>
-              <div className="pt-2 border-t border-slate-900">
-                <div className="text-xs font-bold text-white">Suresh Verma</div>
-                <div className="text-[11px] text-emerald-400">Head Accountant, St. Xavier Academy</div>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800/80 space-y-4">
-              <div className="flex text-amber-400 gap-1">
-                {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400" />)}
-              </div>
-              <p className="text-xs text-slate-300 italic leading-relaxed">
-                "Parents love being able to download digital Admit Cards and view private report cards directly from their smartphone browsers."
-              </p>
-              <div className="pt-2 border-t border-slate-900">
-                <div className="text-xs font-bold text-white">Pooja Sharma</div>
-                <div className="text-[11px] text-sky-400">Senior Teacher & Class Coordinator</div>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* ------------------------------------------------------------------- */}
-      {/* FINAL CALL TO ACTION */}
-      {/* ------------------------------------------------------------------- */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="p-10 rounded-3xl bg-gradient-to-r from-indigo-950 via-slate-900 to-sky-950 border border-indigo-500/30 shadow-2xl space-y-6">
-          <h2 className="text-3xl sm:text-4xl font-black text-white">
-            Ready To Modernize Your School Administration?
-          </h2>
-          <p className="text-slate-300 text-sm max-w-xl mx-auto">
-            Join hundreds of K-12 institutions already using Greenwood ERP to streamline fees, exams, timetables, and payroll.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-            <button
-              onClick={onOpenTrialModal}
-              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2 cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>Start Free 14-Day Trial</span>
-            </button>
-
-            <Link
-              to="/contact"
-              className="px-6 py-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700"
-            >
-              Contact Sales Team
-            </Link>
-          </div>
+          <button
+            onClick={handleDemoClick}
+            className="px-6 py-3 bg-[#00aeef] hover:bg-[#0092c8] text-white font-bold text-xs uppercase tracking-wider rounded-lg shadow-md transition-all shrink-0 cursor-pointer"
+          >
+            Request Demo
+          </button>
         </div>
       </section>
 
