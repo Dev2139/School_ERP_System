@@ -57,6 +57,8 @@ export default function AcademicList() {
   // Modals state
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);
   const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
+  const [isEditSectionModalOpen, setIsEditSectionModalOpen] = useState(false);
+  const [editingSection, setEditingSection] = useState(null);
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
 
@@ -67,6 +69,10 @@ export default function AcademicList() {
   const [sectionName, setSectionName] = useState('');
   const [sectionRoomNo, setSectionRoomNo] = useState('');
   const [sectionClassTeacher, setSectionClassTeacher] = useState('');
+
+  const [editSectionName, setEditSectionName] = useState('');
+  const [editSectionRoomNo, setEditSectionRoomNo] = useState('');
+  const [editSectionClassTeacher, setEditSectionClassTeacher] = useState('');
 
   const [subjectName, setSubjectName] = useState('');
   const [subjectCode, setSubjectCode] = useState('');
@@ -229,6 +235,41 @@ export default function AcademicList() {
       }
     } catch (err) {
       addToast(err.response?.data?.message || 'Failed to delete section', 'error');
+    }
+  };
+
+  // Open Edit Section Modal
+  const handleOpenEditSectionModal = (section, e) => {
+    if (e) e.stopPropagation();
+    setEditingSection(section);
+    setEditSectionName(section.name || '');
+    setEditSectionRoomNo(section.roomNo || '');
+    setEditSectionClassTeacher(section.classTeacher?._id || section.classTeacher || '');
+    setIsEditSectionModalOpen(true);
+  };
+
+  // Update Section Handler
+  const handleUpdateSection = async (e) => {
+    e.preventDefault();
+    if (!editingSection?._id || !editSectionName.trim()) return;
+
+    setSubmitting(true);
+    try {
+      const res = await api.put(`/academics/sections/${editingSection._id}`, {
+        name: editSectionName.trim(),
+        roomNo: editSectionRoomNo.trim() || 'Room 101',
+        classTeacher: editSectionClassTeacher || null,
+      });
+      if (res.data.success) {
+        addToast(`Section updated successfully!`, 'success');
+        setIsEditSectionModalOpen(false);
+        setEditingSection(null);
+        fetchData();
+      }
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to update section', 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -576,13 +617,22 @@ export default function AcademicList() {
                       <div className="p-3 bg-sky-50 text-sky-600 rounded-2xl border border-sky-100 group-hover:scale-105 transition-transform">
                         <Layers className="w-6 h-6" />
                       </div>
-                      <button
-                        onClick={(e) => handleDeleteSection(sec._id, sec.name, e)}
-                        className="p-2 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-colors cursor-pointer"
-                        title="Delete Section"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={(e) => handleOpenEditSectionModal(sec, e)}
+                          className="p-2 bg-slate-50 hover:bg-sky-50 text-slate-400 hover:text-sky-600 rounded-xl transition-colors cursor-pointer"
+                          title="Edit Section & Room Number"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteSection(sec._id, sec.name, e)}
+                          className="p-2 bg-slate-50 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-colors cursor-pointer"
+                          title="Delete Section"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
 
                     <div>
@@ -1066,6 +1116,74 @@ export default function AcademicList() {
                 className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50"
               >
                 {submitting ? 'Adding Section...' : 'Add Section'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* EDIT SECTION MODAL */}
+      {isEditSectionModalOpen && editingSection && (
+        <Modal
+          isOpen={isEditSectionModalOpen}
+          onClose={() => setIsEditSectionModalOpen(false)}
+          title={`Edit Section & Room Number`}
+        >
+          <form onSubmit={handleUpdateSection} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Section Name</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Section A"
+                value={editSectionName}
+                onChange={(e) => setEditSectionName(e.target.value)}
+                className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Room Number / Location</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Room 102"
+                value={editSectionRoomNo}
+                onChange={(e) => setEditSectionRoomNo(e.target.value)}
+                className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Assign Class Teacher</label>
+              <select
+                value={editSectionClassTeacher}
+                onChange={(e) => setEditSectionClassTeacher(e.target.value)}
+                className="w-full px-3 py-2 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+              >
+                <option value="">Unassigned</option>
+                {teachers.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name} ({t.qualification || 'Faculty'})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <button
+                type="button"
+                onClick={() => setIsEditSectionModalOpen(false)}
+                className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {submitting ? 'Saving Changes...' : 'Save Changes'}
               </button>
             </div>
           </form>

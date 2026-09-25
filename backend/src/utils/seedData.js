@@ -183,22 +183,133 @@ const seed = async () => {
     teacher1.subjects = [mathSub._id, scienceSub._id, englishSub._id];
     await teacher1.save();
 
-    await TeacherAssignment.create({
-      schoolId: school._id,
-      teacherId: teacher1._id,
-      classId: class7._id,
-      sectionId: sec7A._id,
-      subjectId: mathSub._id,
-      academicYearId: academicYear._id,
-    });
-    await TeacherAssignment.create({
-      schoolId: school._id,
-      teacherId: teacher1._id,
-      classId: class7._id,
-      sectionId: sec7A._id,
-      subjectId: scienceSub._id,
-      academicYearId: academicYear._id,
-    });
+    // Create Faculty Members from Directory Seed
+    const facultyList = [
+      { employeeId: 'TCH-692', name: 'Manubhai Parmar', email: 'manu@gmail.com', phone: '+91 0123456789', qualification: 'PGT Mathematics', experience: '5 Years', subjName: 'Mathematics', codePrefix: 'MATH' },
+      { employeeId: 'TCH-345', name: 'Harshida Parmar', email: 'harshida@gmail.com', phone: '+91 1234567890', qualification: 'PGT Hindi', experience: '5 Years', subjName: 'Hindi', codePrefix: 'HIN' },
+      { employeeId: 'TCH-405', name: 'Mahesh Tripathi', email: 'mahesh@gmail.com', phone: '+91 789461230', qualification: 'PGT Physics', experience: '5 Years', subjName: 'Physics', codePrefix: 'PHY' },
+      { employeeId: 'TCH-675', name: 'Ajitkumar Sharma', email: 'ajit@gmai.com', phone: '+91 987654321', qualification: 'PGT Chemestry', experience: '5 Years', subjName: 'Chemistry', codePrefix: 'CHEM' },
+      { employeeId: 'TCH-358', name: 'Alpesh Parmar', email: 'alpesh@gmail.com', phone: '+91 7412589630', qualification: 'PGT Computer Science', experience: '5 Years', subjName: 'Computer Science', codePrefix: 'CS' },
+    ];
+
+    const facultyDocs = [];
+    for (const f of facultyList) {
+      let t = await Teacher.create({
+        schoolId: school._id,
+        employeeId: f.employeeId,
+        name: f.name,
+        email: f.email,
+        phone: f.phone,
+        qualification: f.qualification,
+        experience: f.experience,
+      });
+
+      let u = await User.create({
+        schoolId: school._id,
+        username: f.email.split('@')[0],
+        email: f.email,
+        password: 'Teacher@123',
+        role: 'teacher',
+        profileId: t._id,
+        profileModel: 'Teacher',
+      });
+      t.userId = u._id;
+      await t.save();
+      facultyDocs.push(t);
+    }
+
+    // Create Classes 1 to 5 with Sections, Subjects & Timetables
+    const daysArr = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const periodsArr = [
+      { periodNumber: 1, startTime: '09:00 AM', endTime: '09:45 AM' },
+      { periodNumber: 2, startTime: '09:45 AM', endTime: '10:30 AM' },
+      { periodNumber: 3, startTime: '10:30 AM', endTime: '11:15 AM' },
+      { periodNumber: 4, startTime: '11:30 AM', endTime: '12:15 PM' },
+      { periodNumber: 5, startTime: '12:15 PM', endTime: '01:00 PM' },
+    ];
+
+    for (let cIdx = 0; cIdx < 5; cIdx++) {
+      const classNum = cIdx + 1;
+      const className = `Class ${classNum}`;
+      const classCode = `C${classNum}`;
+      const roomNo = `Room ${101 + cIdx}`;
+
+      const cls = await Class.create({
+        schoolId: school._id,
+        academicYearId: academicYear._id,
+        name: className,
+        code: classCode,
+        classTeacher: facultyDocs[cIdx]._id,
+      });
+
+      const sec = await Section.create({
+        schoolId: school._id,
+        classId: cls._id,
+        name: 'Section A',
+        roomNo,
+        classTeacher: facultyDocs[cIdx]._id,
+      });
+
+      const classSubjects = [];
+      for (let sIdx = 0; sIdx < facultyList.length; sIdx++) {
+        const f = facultyList[sIdx];
+        const tDoc = facultyDocs[sIdx];
+
+        const subj = await Subject.create({
+          schoolId: school._id,
+          classId: cls._id,
+          name: f.subjName,
+          code: `${f.codePrefix}-${classNum}`,
+          type: 'theory',
+          teacherId: tDoc._id,
+        });
+
+        if (!tDoc.subjects.includes(subj._id)) {
+          tDoc.subjects.push(subj._id);
+          await tDoc.save();
+        }
+
+        await TeacherAssignment.create({
+          schoolId: school._id,
+          teacherId: tDoc._id,
+          classId: cls._id,
+          sectionId: sec._id,
+          subjectId: subj._id,
+          academicYearId: academicYear._id,
+        });
+
+        classSubjects.push({ subject: subj, teacher: tDoc });
+      }
+
+      // Generate 5-Day Conflict-Free Timetable Slots
+      const ttSlots = [];
+      for (let dIdx = 0; dIdx < daysArr.length; dIdx++) {
+        const dayName = daysArr[dIdx];
+        for (let pIdx = 0; pIdx < periodsArr.length; pIdx++) {
+          const p = periodsArr[pIdx];
+          const facIdx = (cIdx + dIdx + pIdx) % 5;
+          const { subject, teacher } = classSubjects[facIdx];
+
+          ttSlots.push({
+            day: dayName,
+            periodNumber: p.periodNumber,
+            startTime: p.startTime,
+            endTime: p.endTime,
+            subjectId: subject._id,
+            teacherId: teacher._id,
+            classroom: roomNo,
+          });
+        }
+      }
+
+      await Timetable.create({
+        schoolId: school._id,
+        academicYearId: academicYear._id,
+        classId: cls._id,
+        sectionId: sec._id,
+        slots: ttSlots,
+      });
+    }
 
     console.log('[Seed] Creating Staff Accounts...');
     const librarianStaff = await Staff.create({

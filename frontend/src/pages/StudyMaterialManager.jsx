@@ -613,7 +613,7 @@ export default function StudyMaterialManager() {
                       <option value="">Select Section</option>
                       {activeClassObj?.sections?.map((s) => (
                         <option key={s._id} value={s._id}>
-                          {s.name}
+                          {s.name} {s.roomNo ? `(${s.roomNo})` : ''}
                         </option>
                       ))}
                     </select>

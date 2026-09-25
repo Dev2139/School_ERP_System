@@ -423,7 +423,7 @@ export default function StudentList() {
                   <option value="">All Sections</option>
                   {selectedClassForFilter?.sections?.map((s) => (
                     <option key={s._id} value={s._id}>
-                      {s.name}
+                      {s.name} {s.roomNo ? `(${s.roomNo})` : ''}
                     </option>
                   ))}
                 </select>
@@ -504,7 +504,7 @@ export default function StudentList() {
                 >
                   {selectedClassForEdit?.sections?.map((s) => (
                     <option key={s._id} value={s._id}>
-                      {s.name}
+                      {s.name} {s.roomNo ? `(${s.roomNo})` : ''}
                     </option>
                   ))}
                 </select>
@@ -689,7 +689,7 @@ export default function StudentList() {
                 >
                   {selectedClassForForm?.sections?.map((s) => (
                     <option key={s._id} value={s._id}>
-                      {s.name}
+                      {s.name} {s.roomNo ? `(${s.roomNo})` : ''}
                     </option>
                   ))}
                 </select>

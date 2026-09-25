@@ -25,6 +25,7 @@ const homeworkSchema = new mongoose.Schema(
     description: { type: String, required: true },
     assignedDate: { type: Date, default: Date.now },
     dueDate: { type: Date, required: true },
+    allowOnlineSubmission: { type: Boolean, default: false },
     attachments: [
       {
         name: String,

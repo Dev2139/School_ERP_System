@@ -26,18 +26,20 @@ exports.getStudyMaterials = async (req, res, next) => {
     } 
     // 2. TEACHER ROLE: Teacher can ONLY see study materials uploaded by themselves
     else if (req.user.role === 'teacher') {
+      const mongoose = require('mongoose');
       if (req.user.profileId) {
         query.teacherId = req.user.profileId;
       }
-      if (classId) query.classId = classId;
-      if (sectionId) query.sectionId = sectionId;
-      if (subjectId) query.subjectId = subjectId;
+      if (classId && mongoose.Types.ObjectId.isValid(classId)) query.classId = classId;
+      if (sectionId && mongoose.Types.ObjectId.isValid(sectionId)) query.sectionId = sectionId;
+      if (subjectId && mongoose.Types.ObjectId.isValid(subjectId)) query.subjectId = subjectId;
     } 
     // 3. ADMIN / PRINCIPAL ROLE: Full access
     else {
-      if (classId) query.classId = classId;
-      if (sectionId) query.sectionId = sectionId;
-      if (subjectId) query.subjectId = subjectId;
+      const mongoose = require('mongoose');
+      if (classId && mongoose.Types.ObjectId.isValid(classId)) query.classId = classId;
+      if (sectionId && mongoose.Types.ObjectId.isValid(sectionId)) query.sectionId = sectionId;
+      if (subjectId && mongoose.Types.ObjectId.isValid(subjectId)) query.subjectId = subjectId;
     }
 
     const materials = await StudyMaterial.find(query)

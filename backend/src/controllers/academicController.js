@@ -95,13 +95,16 @@ exports.createClass = async (req, res, next) => {
       academicYearId,
     });
 
-    // Auto-create initial Section A for the new class
+    // Auto-create initial Section A for the new class with dynamic room number
+    const existingSectionsCount = await Section.countDocuments({ schoolId: req.user.schoolId });
+    const autoRoomNo = `Room ${101 + (existingSectionsCount * 2)}`;
+
     await Section.create({
       schoolId: req.user.schoolId,
       classId: newClass._id,
       name: 'Section A',
       capacity: 40,
-      roomNo: 'Room 101',
+      roomNo: autoRoomNo,
     });
 
     await logAudit(req, 'CLASS_CREATED', 'Class', newClass._id.toString(), { name: newClass.name });
@@ -113,7 +116,15 @@ exports.createClass = async (req, res, next) => {
 
 exports.createSection = async (req, res, next) => {
   try {
-    const section = await Section.create({ ...req.body, schoolId: req.user.schoolId });
+    const existingSectionsCount = await Section.countDocuments({ schoolId: req.user.schoolId });
+    const defaultRoomNo = `Room ${101 + (existingSectionsCount * 2)}`;
+    const roomNo = (req.body.roomNo && req.body.roomNo.trim()) ? req.body.roomNo.trim() : defaultRoomNo;
+
+    const section = await Section.create({
+      ...req.body,
+      schoolId: req.user.schoolId,
+      roomNo,
+    });
     res.status(201).json({ success: true, data: section });
   } catch (error) {
     next(error);

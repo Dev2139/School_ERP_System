@@ -76,8 +76,9 @@ exports.getTimetable = async (req, res, next) => {
     }
 
     // 3. ADMIN / PRINCIPAL ROLE: Full access to all class timetables
-    if (classId) query.classId = classId;
-    if (sectionId) query.sectionId = sectionId;
+    const mongoose = require('mongoose');
+    if (classId && mongoose.Types.ObjectId.isValid(classId)) query.classId = classId;
+    if (sectionId && mongoose.Types.ObjectId.isValid(sectionId)) query.sectionId = sectionId;
 
     const timetable = await Timetable.findOne(query)
       .populate('classId', 'name')

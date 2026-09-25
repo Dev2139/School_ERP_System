@@ -34,8 +34,13 @@ exports.getStudents = async (req, res, next) => {
         ...(parentIdMatch ? [{ parentId: parentIdMatch }] : []),
       ];
     } else {
-      if (classId) query.classId = classId;
-      if (sectionId) query.sectionId = sectionId;
+      const mongoose = require('mongoose');
+      if (classId && classId !== '' && classId !== 'null' && classId !== 'undefined' && mongoose.Types.ObjectId.isValid(classId)) {
+        query.classId = classId;
+      }
+      if (sectionId && sectionId !== '' && sectionId !== 'null' && sectionId !== 'undefined' && mongoose.Types.ObjectId.isValid(sectionId)) {
+        query.sectionId = sectionId;
+      }
       if (status) query.status = status;
 
       if (search && search !== 'undefined' && search.trim() !== '') {
@@ -146,7 +151,7 @@ exports.getStudentById = async (req, res, next) => {
       if (parentDoc) {
         student.parentId = parentDoc._id;
         await student.save();
-        student = await Student.findById(targetId)
+        student = await Student.findById(student._id)
           .populate('classId')
           .populate('sectionId')
           .populate('parentId')
@@ -154,12 +159,20 @@ exports.getStudentById = async (req, res, next) => {
       }
     }
 
+    // Safely extract class and section IDs in case classId or sectionId is null or not populated
+    const classIdVal = student.classId?._id || student.classId || null;
+    const sectionIdVal = student.sectionId?._id || student.sectionId || null;
+
     // Fetch tab details: Attendance, Results, Fees, Homework
-    const attendanceRecords = await Attendance.find({
-      schoolId: req.user.schoolId,
-      classId: student.classId._id,
-      'records.studentId': student._id,
-    }).sort({ date: -1 }).limit(30);
+    const attendanceRecords = classIdVal
+      ? await Attendance.find({
+          schoolId: req.user?.schoolId || student.schoolId,
+          classId: classIdVal,
+          'records.studentId': student._id,
+        }).sort({ date: -1 }).limit(30)
+      : await Attendance.find({
+          'records.studentId': student._id,
+        }).sort({ date: -1 }).limit(30);
 
     const attendanceStats = {
       total: attendanceRecords.length,
@@ -169,13 +182,15 @@ exports.getStudentById = async (req, res, next) => {
       leave: 0,
     };
     attendanceRecords.forEach((att) => {
-      const rec = att.records.find((r) => r.studentId.toString() === student._id.toString());
+      const rec = att.records ? att.records.find((r) => r.studentId && (r.studentId._id || r.studentId).toString() === student._id.toString()) : null;
       if (rec && attendanceStats[rec.status] !== undefined) attendanceStats[rec.status]++;
     });
 
     const results = await Result.find({ studentId: student._id }).populate('examinationId');
     const fees = await StudentFee.find({ studentId: student._id }).populate('feeStructureId');
-    const homework = await Homework.find({ classId: student.classId._id, sectionId: student.sectionId._id }).sort({ dueDate: -1 });
+    const homework = (classIdVal && sectionIdVal)
+      ? await Homework.find({ classId: classIdVal, sectionId: sectionIdVal }).sort({ dueDate: -1 })
+      : (classIdVal ? await Homework.find({ classId: classIdVal }).sort({ dueDate: -1 }) : []);
 
     res.status(200).json({
       success: true,
@@ -289,7 +304,22 @@ exports.updateStudent = async (req, res, next) => {
       }
     }
 
-    const student = await Student.findByIdAndUpdate(targetId, req.body, { new: true })
+    const updateData = { ...req.body };
+    const mongoose = require('mongoose');
+
+    // Remove empty string or invalid ObjectId values so Mongoose doesn't throw BSONError
+    ['classId', 'sectionId', 'parentId', 'academicYearId', 'userId', 'schoolId'].forEach((field) => {
+      if (
+        updateData[field] === '' ||
+        updateData[field] === 'null' ||
+        updateData[field] === 'undefined' ||
+        (updateData[field] && typeof updateData[field] === 'string' && !mongoose.Types.ObjectId.isValid(updateData[field]))
+      ) {
+        delete updateData[field];
+      }
+    });
+
+    const student = await Student.findByIdAndUpdate(targetId, updateData, { new: true })
       .populate('classId')
       .populate('sectionId')
       .populate('academicYearId');

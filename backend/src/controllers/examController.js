@@ -27,7 +27,12 @@ exports.createExam = async (req, res, next) => {
 exports.getExamSubjects = async (req, res, next) => {
   try {
     const { examinationId, classId } = req.query;
-    const subjects = await ExamSubject.find({ schoolId: req.user.schoolId, examinationId, classId }).populate('subjectId');
+    const mongoose = require('mongoose');
+    const query = { schoolId: req.user.schoolId };
+    if (examinationId && mongoose.Types.ObjectId.isValid(examinationId)) query.examinationId = examinationId;
+    if (classId && mongoose.Types.ObjectId.isValid(classId)) query.classId = classId;
+
+    const subjects = await ExamSubject.find(query).populate('subjectId');
     res.status(200).json({ success: true, data: subjects });
   } catch (error) {
     next(error);

@@ -424,7 +424,7 @@ export default function AttendanceManager() {
                 >
                   {selectedClassObj?.sections?.map((s) => (
                     <option key={s._id} value={s._id}>
-                      {s.name}
+                      {s.name} {s.roomNo ? `(${s.roomNo})` : ''}
                     </option>
                   ))}
                 </select>

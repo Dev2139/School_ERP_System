@@ -36,7 +36,16 @@ exports.createAdmission = async (req, res, next) => {
   try {
     const appNo = 'APP-' + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90);
 
-    const { targetClassId, targetSectionId } = req.body;
+    const mongoose = require('mongoose');
+    const payload = { ...req.body };
+    if (payload.targetClassId === '' || payload.targetClassId === 'null' || !mongoose.Types.ObjectId.isValid(payload.targetClassId)) {
+      delete payload.targetClassId;
+    }
+    if (payload.targetSectionId === '' || payload.targetSectionId === 'null' || !mongoose.Types.ObjectId.isValid(payload.targetSectionId)) {
+      delete payload.targetSectionId;
+    }
+
+    const { targetClassId, targetSectionId } = payload;
     let resolvedSectionId = targetSectionId;
 
     if (!resolvedSectionId && targetClassId) {
@@ -45,7 +54,7 @@ exports.createAdmission = async (req, res, next) => {
     }
 
     const admission = await Admission.create({
-      ...req.body,
+      ...payload,
       schoolId: req.user.schoolId,
       applicationNo: appNo,
       targetSectionId: resolvedSectionId,

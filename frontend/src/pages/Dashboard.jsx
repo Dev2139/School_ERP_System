@@ -723,12 +723,18 @@ export default function Dashboard() {
                         {hw.dueDate ? new Date(hw.dueDate).toLocaleString('en-GB') : '21-08-2026 05:00:00 PM'}
                       </td>
                       <td className="py-2.5 px-2 text-right">
-                        <button
-                          onClick={() => navigate('/homework')}
-                          className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg shadow-xs transition-all whitespace-nowrap"
-                        >
-                          Click here to submit
-                        </button>
+                        {hw.allowOnlineSubmission ? (
+                          <button
+                            onClick={() => navigate('/homework')}
+                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg shadow-xs transition-all whitespace-nowrap cursor-pointer"
+                          >
+                            Click here to submit
+                          </button>
+                        ) : (
+                          <span className="px-2.5 py-1 bg-slate-100 text-slate-500 font-bold text-[10px] rounded-lg border border-slate-200 whitespace-nowrap">
+                            In-Class Submission
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
