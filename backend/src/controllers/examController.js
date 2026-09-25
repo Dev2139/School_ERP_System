@@ -2,6 +2,10 @@ const Examination = require('../models/Examination');
 const ExamSubject = require('../models/ExamSubject');
 const Result = require('../models/Result');
 const Student = require('../models/Student');
+const Teacher = require('../models/Teacher');
+const Class = require('../models/Class');
+const Section = require('../models/Section');
+const mongoose = require('mongoose');
 const { generateReportCardPDF } = require('../services/pdfService');
 const { logAudit } = require('../middleware/auditMiddleware');
 
@@ -27,12 +31,23 @@ exports.createExam = async (req, res, next) => {
 exports.getExamSubjects = async (req, res, next) => {
   try {
     const { examinationId, classId } = req.query;
-    const mongoose = require('mongoose');
     const query = { schoolId: req.user.schoolId };
-    if (examinationId && mongoose.Types.ObjectId.isValid(examinationId)) query.examinationId = examinationId;
-    if (classId && mongoose.Types.ObjectId.isValid(classId)) query.classId = classId;
 
-    const subjects = await ExamSubject.find(query).populate('subjectId');
+    if (req.user.role === 'student') {
+      const studentDoc = await Student.findById(req.user.profileId);
+      if (studentDoc && studentDoc.classId) {
+        query.classId = studentDoc.classId;
+      }
+    } else {
+      if (classId && mongoose.Types.ObjectId.isValid(classId)) query.classId = classId;
+    }
+
+    if (examinationId && mongoose.Types.ObjectId.isValid(examinationId)) query.examinationId = examinationId;
+
+    const subjects = await ExamSubject.find(query)
+      .populate('subjectId')
+      .populate('classId', 'name');
+
     res.status(200).json({ success: true, data: subjects });
   } catch (error) {
     next(error);
@@ -41,7 +56,35 @@ exports.getExamSubjects = async (req, res, next) => {
 
 exports.saveExamSubject = async (req, res, next) => {
   try {
-    const examSub = await ExamSubject.create({ ...req.body, schoolId: req.user.schoolId });
+    const { classId, examinationId } = req.body;
+    const schoolId = req.user.schoolId;
+
+    // Check Class Teacher Permission for teachers
+    if (req.user.role === 'teacher') {
+      const teacherProfileId = (req.user.profileId?._id || req.user.profileId || '').toString();
+      const classObj = await Class.findById(classId);
+      const sections = await Section.find({ classId });
+
+      let isClassTeacher = false;
+      if (classObj && classObj.classTeacher && classObj.classTeacher.toString() === teacherProfileId) {
+        isClassTeacher = true;
+      }
+      for (const s of sections) {
+        if (s.classTeacher && s.classTeacher.toString() === teacherProfileId) {
+          isClassTeacher = true;
+        }
+      }
+
+      if (!isClassTeacher) {
+        return res.status(403).json({
+          success: false,
+          message: 'Forbidden. Only the assigned Class Teacher can create or update the exam timetable for this class.',
+        });
+      }
+    }
+
+    const examSub = await ExamSubject.create({ ...req.body, schoolId });
+    await logAudit(req, 'EXAM_SUBJECT_SCHEDULED', 'ExamSubject', examSub._id.toString());
     res.status(201).json({ success: true, data: examSub });
   } catch (error) {
     next(error);
@@ -116,24 +159,68 @@ exports.getResults = async (req, res, next) => {
     const query = { schoolId: req.user.schoolId };
 
     if (req.user.role === 'student') {
+      // PRIVACY RULE: One student = One Result! Students ONLY see their own result!
       query.studentId = req.user.profileId;
-      if (examinationId) query.examinationId = examinationId;
+      if (examinationId && mongoose.Types.ObjectId.isValid(examinationId)) query.examinationId = examinationId;
     } else if (req.user.role === 'parent') {
       const Parent = require('../models/Parent');
       const parentDoc = await Parent.findById(req.user.profileId);
       query.studentId = { $in: parentDoc ? parentDoc.children : [] };
-      if (examinationId) query.examinationId = examinationId;
+      if (examinationId && mongoose.Types.ObjectId.isValid(examinationId)) query.examinationId = examinationId;
     } else {
-      if (examinationId) query.examinationId = examinationId;
-      if (classId) query.classId = classId;
-      if (studentId) query.studentId = studentId;
+      if (examinationId && mongoose.Types.ObjectId.isValid(examinationId)) query.examinationId = examinationId;
+      if (classId && mongoose.Types.ObjectId.isValid(classId)) query.classId = classId;
+      if (studentId && mongoose.Types.ObjectId.isValid(studentId)) query.studentId = studentId;
     }
 
     const results = await Result.find(query)
-      .populate('studentId', 'firstName lastName rollNumber admissionNumber')
-      .populate('marks.subjectId', 'name code');
+      .populate('studentId', 'firstName lastName rollNumber admissionNumber email classId sectionId profilePhoto')
+      .populate('marks.subjectId', 'name code')
+      .populate('examinationId', 'name term startDate endDate');
 
     res.status(200).json({ success: true, data: results });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getAdmitCardData = async (req, res, next) => {
+  try {
+    const { examinationId } = req.query;
+    let studentId = req.user.profileId;
+
+    if (req.user.role !== 'student' && req.query.studentId) {
+      studentId = req.query.studentId;
+    }
+
+    const student = await Student.findById(studentId).populate('classId sectionId');
+    if (!student) return res.status(404).json({ success: false, message: 'Student profile not found' });
+
+    let exam = null;
+    if (examinationId && mongoose.Types.ObjectId.isValid(examinationId)) {
+      exam = await Examination.findById(examinationId);
+    } else {
+      exam = await Examination.findOne({ schoolId: req.user.schoolId }).sort({ startDate: -1 });
+    }
+
+    let timetable = [];
+    if (exam && student.classId) {
+      timetable = await ExamSubject.find({
+        schoolId: req.user.schoolId,
+        examinationId: exam._id,
+        classId: student.classId._id || student.classId,
+      }).populate('subjectId');
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        student,
+        examination: exam,
+        timetable,
+        hallNumber: student.sectionId?.roomNo ? `Room ${student.sectionId.roomNo}` : 'Room 101',
+      },
+    });
   } catch (error) {
     next(error);
   }

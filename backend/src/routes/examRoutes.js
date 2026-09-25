@@ -8,10 +8,11 @@ router.get('/', examController.getExams);
 router.post('/', authorizeRoles('admin'), examController.createExam);
 
 router.get('/subjects', examController.getExamSubjects);
-router.post('/subjects', authorizeRoles('admin'), examController.saveExamSubject);
+router.post('/subjects', authorizeRoles('admin', 'teacher'), examController.saveExamSubject);
 
 router.get('/results', examController.getResults);
 router.post('/results', authorizeRoles('admin', 'teacher'), examController.saveResults);
+router.get('/admit-card', examController.getAdmitCardData);
 router.get('/report-card/:id', examController.downloadReportCard);
 
 module.exports = router;
