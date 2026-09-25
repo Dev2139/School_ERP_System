@@ -36,11 +36,11 @@ export default function FeaturesGrid({ onOpenTrialModal }) {
       id: 'exam-scheduling',
       icon: Calendar,
       badge: 'Smart Exam Timetable',
-      title: 'Class Teacher Timetable Scheduling & Sunday Skipping',
-      description: 'Empower Class Teachers to schedule examination timetables for their class. The smart scheduler automatically increments dates (+1 day) and skips Sundays automatically.',
+      title: 'Class Teacher Exam Timetable Scheduler',
+      description: 'Empower Class Teachers to schedule examination timetables for their class. The smart scheduler automatically increments dates (+1 day) from previous subjects.',
       highlights: [
         'Auto-increments exam date by +1 day from previous subject',
-        'Automatically detects & skips Sundays during scheduling',
+        'Intelligent calendar management and holiday calculation',
         'Class Teachers schedule exam timetable for their class standard',
         'Instant timetable visibility on Student & Parent Dashboards'
       ],

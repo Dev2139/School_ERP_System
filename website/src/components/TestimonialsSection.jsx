@@ -7,7 +7,7 @@ export default function TestimonialsSection() {
       name: 'Dr. Rajesh K. Mehta',
       role: 'Principal',
       school: 'Greenwood International School',
-      quote: 'The All-Subject Master Gradebook Matrix and Class Teacher Exam Timetable with automatic Sunday skipping saved our faculty over 40 hours during final examinations.',
+      quote: 'The All-Subject Master Gradebook Matrix and Class Teacher Exam Timetable Scheduler saved our faculty over 40 hours during final examinations.',
       rating: 5,
     },
     {
@@ -27,7 +27,7 @@ export default function TestimonialsSection() {
     {
       name: 'Anil Patel',
       role: 'Parent',
-      school: 'Parent of Dev Patel (Class 1)',
+      school: 'Parent of Kavan Patel (Class 1)',
       quote: 'I can view my child’s examination timetable, print the official Hall Ticket, and download private report cards anytime from my smartphone.',
       rating: 5,
     },
@@ -36,7 +36,7 @@ export default function TestimonialsSection() {
   return (
     <section className="py-24 bg-slate-900/40 relative border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        
+
         <div className="max-w-3xl mx-auto space-y-4 mb-16">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold uppercase tracking-wider">
             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />

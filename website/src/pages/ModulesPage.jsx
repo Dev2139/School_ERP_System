@@ -64,11 +64,11 @@ export default function ModulesPage({ onOpenDemoModal }) {
       category: 'academic',
       badge: 'Timetable & Scheduling',
       icon: Calendar,
-      title: 'Class Teacher Timetable & Automatic Sunday Skipping',
-      description: 'Class Teachers schedule examination timetables for their class standard. The smart scheduler auto-increments dates (+1 day) from previous subjects and skips Sundays automatically.',
+      title: 'Class Teacher Exam Timetable Scheduler',
+      description: 'Class Teachers schedule examination timetables for their class standard. The smart scheduler auto-increments dates (+1 day) from previous subjects with intelligent calendar management.',
       capabilities: [
         'Auto-increments exam date by +1 day from previous subject',
-        'Automatically detects and skips Sundays during schedule creation',
+        'Intelligent calendar management and holiday calculation',
         'Class Teachers hold scheduling permissions for their class standard',
         'Instant updates on Student & Parent Mobile views'
       ]

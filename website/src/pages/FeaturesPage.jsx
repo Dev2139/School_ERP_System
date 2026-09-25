@@ -33,7 +33,7 @@ export default function FeaturesPage({ onOpenTrialModal }) {
       subtitle: 'Handles examination timetables, gradebook matrix, and hall tickets.',
       items: [
         'All-Subject Master Gradebook Matrix',
-        'Class Teacher Exam Timetable with Sunday Skip',
+        'Class Teacher Exam Timetable Scheduler',
         'Digital Printable Hall Tickets / Admit Cards',
         'Automatic Class Rank & Percentage Calculation',
         'Strict 1-Student Report Card Privacy'

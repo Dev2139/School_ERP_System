@@ -129,7 +129,7 @@ export default function AboutErpPage({ onOpenDemoModal }) {
           <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
             <h3 className="text-base font-bold text-slate-900">Practical Real-World Automation</h3>
             <p className="text-slate-600">
-              When scheduling exam timetables, the system automatically advances dates (+1 day) and skips Sundays. When entering exam marks, teachers use a side-by-side all-subject spreadsheet matrix rather than opening separate subject forms.
+              When scheduling exam timetables, the system automatically advances exam dates (+1 day) from previous subjects. When entering exam marks, teachers use a side-by-side all-subject spreadsheet matrix rather than opening separate subject forms.
             </p>
           </div>
         </div>

@@ -29,7 +29,7 @@ export default function WhyUsPage({ onOpenDemoModal }) {
     },
     {
       title: 'Focused On Real-World Workflows',
-      desc: 'We solve practical school challenges: automatic Sunday skipping during exam timetable creation, side-by-side all-subject gradebook matrices, and watermarked PDF fee receipts.'
+      desc: 'We solve practical school challenges: automated exam timetable scheduling (+1 day auto calculation), side-by-side all-subject gradebook matrices, and watermarked PDF fee receipts.'
     },
     {
       title: 'Technology With Purpose',

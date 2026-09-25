@@ -70,8 +70,8 @@ export default function PricingPage({ onOpenTrialModal }) {
       a: 'Yes. Greenwood ERP utilizes bank-grade SSL encryption, role-based access control, and automated daily cloud backups to ensure your data is 100% secure.'
     },
     {
-      q: 'Can Class Teachers schedule exam timetables with Sunday skipping?',
-      a: 'Yes! Class Teachers assigned to a class standard can schedule exam timetables for their class. The smart scheduler automatically advances +1 day and skips Sundays.'
+      q: 'Can Class Teachers schedule exam timetables?',
+      a: 'Yes! Class Teachers assigned to a class standard can schedule exam timetables for their class. The smart scheduler automatically advances +1 day for subsequent subjects.'
     },
     {
       q: 'How does the Accountant Counter Fee Portal work?',

@@ -34,7 +34,7 @@ export default function DemoPage() {
       title: 'Faculty Portal',
       icon: User,
       badge: 'Timetables & Gradebook',
-      summary: 'Class teachers schedule exam timetables with Sunday skipping; Subject teachers fill marks in unified Excel-style matrix.',
+      summary: 'Class teachers schedule exam timetables; Subject teachers fill marks in unified Excel-style matrix.',
       demoAccess: 'Teacher Login: manu@gmail.com / Password: User@123'
     },
     {

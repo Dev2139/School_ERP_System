@@ -152,7 +152,7 @@ export default function InteractiveDemo({ onOpenTrialModal }) {
                   </div>
                   <div>
                     <h3 className="text-base font-black text-white">Faculty Portal - Exam Scheduling & Gradebook</h3>
-                    <p className="text-xs text-slate-400">Class teachers schedule exam timetables with Sunday skipping; Subject teachers fill marks in Excel matrix.</p>
+                    <p className="text-xs text-slate-400">Class teachers schedule exam timetables; Subject teachers fill marks in Excel matrix.</p>
                   </div>
                 </div>
                 <span className="text-xs bg-sky-500/20 text-sky-300 border border-sky-500/30 px-3 py-1 rounded-full font-bold">Faculty Portal</span>
@@ -161,7 +161,7 @@ export default function InteractiveDemo({ onOpenTrialModal }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
                   <div className="text-xs font-bold text-sky-300">📅 Class Exam Timetable Scheduler</div>
-                  <p className="text-xs text-slate-400">Auto-increments dates (+1 day) and skips Sundays automatically for Class 1 timetable.</p>
+                  <p className="text-xs text-slate-400">Auto-increments dates (+1 day) automatically for Class 1 timetable.</p>
                 </div>
                 <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
                   <div className="text-xs font-bold text-indigo-300">📊 Excel-Style Master Gradebook</div>

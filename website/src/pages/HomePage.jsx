@@ -110,7 +110,7 @@ export default function HomePage({ onOpenDemoModal }) {
                       activeTab === 'timetable' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    Timetable (Sunday Skip)
+                    Timetable Scheduler
                   </button>
                 </div>
               </div>
@@ -212,20 +212,20 @@ export default function HomePage({ onOpenDemoModal }) {
                   </div>
                 )}
 
-                {/* Tab Screen 3: Timetable Sunday Skipping */}
+                {/* Tab Screen 3: Timetable Scheduler */}
                 {activeTab === 'timetable' && (
                   <div className="p-5 rounded-xl bg-white border border-slate-200 shadow-card space-y-3 animate-fadeIn">
                     <div className="flex items-center justify-between">
                       <div className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-purple-600" />
-                        <span>Class Teacher Exam Timetable (+1 Day & Sunday Skipping)</span>
+                        <span>Class Teacher Exam Timetable Scheduler</span>
                       </div>
-                      <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-0.5 rounded-full font-bold">Sunday Skipped</span>
+                      <span className="text-[10px] bg-purple-100 text-purple-800 border border-purple-200 px-2.5 py-0.5 rounded-full font-bold">Auto Scheduled</span>
                     </div>
                     <div className="p-4 bg-slate-900 text-white rounded-lg font-mono text-xs space-y-2">
                       <div className="text-slate-300">Mathematics: 17-Oct-2026 (Saturday)</div>
-                      <div className="text-amber-400 font-bold">18-Oct-2026 (Sunday - Automatically Skipped)</div>
-                      <div className="text-emerald-400 font-bold">Physics: 19-Oct-2026 (Monday - Auto Scheduled)</div>
+                      <div className="text-amber-400 font-bold">18-Oct-2026 (Sunday - Holiday)</div>
+                      <div className="text-emerald-400 font-bold">Physics: 19-Oct-2026 (Monday - Scheduled)</div>
                     </div>
                   </div>
                 )}
@@ -280,7 +280,7 @@ export default function HomePage({ onOpenDemoModal }) {
             </div>
             <h3 className="text-base font-bold text-slate-900">Smart Exam Timetable</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Class Teachers schedule exam timetables for their class with auto date incrementing (+1 day) and Sunday skipping.
+              Class Teachers schedule exam timetables for their class with auto date incrementing and intelligent date management.
             </p>
           </div>
 
@@ -394,19 +394,19 @@ export default function HomePage({ onOpenDemoModal }) {
           </div>
         </div>
 
-        {/* Showcase Item 2: Class Timetable & Sunday Skip */}
+        {/* Showcase Item 2: Class Timetable Scheduler */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-6 lg:order-2 space-y-4">
             <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700 px-3 py-1 rounded border border-slate-200">
               Examination Scheduling
             </span>
-            <h3 className="text-2xl font-black text-slate-900">Class Teacher Timetable & Automatic Sunday Skipping</h3>
+            <h3 className="text-2xl font-black text-slate-900">Class Teacher Exam Timetable Scheduler</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Empower Class Teachers to schedule examination timetables for their assigned class standard. The smart scheduler automatically advances dates (+1 day) from previous subjects and skips Sundays automatically.
+              Empower Class Teachers to schedule examination timetables for their assigned class standard. The smart scheduler automatically advances exam dates (+1 day) from previous subjects and manages holiday schedules seamlessly.
             </p>
             <div className="space-y-2 pt-1 text-xs text-slate-700 font-medium">
               <div className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-600" /> Smart auto-date calculation (+1 day from previous subject)</div>
-              <div className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-600" /> Automatically detects and skips Sundays during scheduling</div>
+              <div className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-600" /> Automatically accounts for holidays and non-working days</div>
               <div className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-600" /> Direct timetable visibility on Student & Parent dashboards</div>
             </div>
           </div>
@@ -414,12 +414,12 @@ export default function HomePage({ onOpenDemoModal }) {
           <div className="lg:col-span-6 lg:order-1 p-4 rounded-xl bg-slate-900 text-white font-mono text-xs space-y-3 shadow-mockup">
             <div className="flex justify-between border-b border-slate-800 pb-2 text-[11px] text-slate-400">
               <span>EXAM TIMETABLE SCHEDULER</span>
-              <span className="text-amber-400 font-bold font-sans">SUNDAY SKIPPED</span>
+              <span className="text-emerald-400 font-bold font-sans">SCHEDULED</span>
             </div>
             <div className="p-3 bg-slate-950 rounded border border-slate-800 space-y-1 text-[11px]">
               <div className="text-slate-300">Math: 17-Oct-2026 (Saturday)</div>
-              <div className="text-amber-400 font-bold">18-Oct-2026 (Sunday - Skipped)</div>
-              <div className="text-emerald-400 font-bold">Physics: 19-Oct-2026 (Monday - Auto Scheduled)</div>
+              <div className="text-amber-400 font-bold">18-Oct-2026 (Sunday - Holiday)</div>
+              <div className="text-emerald-400 font-bold">Physics: 19-Oct-2026 (Monday - Scheduled)</div>
             </div>
           </div>
         </div>
@@ -477,7 +477,7 @@ export default function HomePage({ onOpenDemoModal }) {
               <div className="p-6 space-y-2 grow">
                 <h3 className="text-lg font-bold text-slate-900">Class Timetables & Master Gradebooks</h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Class Teachers schedule exam dates with auto Sunday skipping; Subject teachers fill marks in an all-subject matrix and publish homework effortlessly.
+                  Class Teachers schedule exam dates with automated date scheduling; Subject teachers fill marks in an all-subject matrix and publish homework effortlessly.
                 </p>
               </div>
             </div>
