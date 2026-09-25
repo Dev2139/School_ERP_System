@@ -371,6 +371,74 @@ export default function ExamManager() {
     }
   };
 
+  const parseDateStr = (dStr) => {
+    if (!dStr) return null;
+    const str = String(dStr).split('T')[0];
+    const parts = str.split('-');
+    if (parts.length === 3) {
+      return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    }
+    return new Date(dStr);
+  };
+
+  const formatDateStr = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getSmartNextExamDate = (timetableList) => {
+    if (!timetableList || timetableList.length === 0) {
+      const defaultDate = new Date(2026, 9, 15);
+      if (defaultDate.getDay() === 0) defaultDate.setDate(defaultDate.getDate() + 1);
+      return formatDateStr(defaultDate);
+    }
+
+    let maxDate = null;
+    timetableList.forEach((t) => {
+      if (t.examDate) {
+        const d = parseDateStr(t.examDate);
+        if (d && !isNaN(d.getTime())) {
+          if (!maxDate || d.getTime() > maxDate.getTime()) {
+            maxDate = d;
+          }
+        }
+      }
+    });
+
+    if (!maxDate) {
+      const defaultDate = new Date(2026, 9, 15);
+      if (defaultDate.getDay() === 0) defaultDate.setDate(defaultDate.getDate() + 1);
+      return formatDateStr(defaultDate);
+    }
+
+    const nextDate = new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate() + 1);
+    if (nextDate.getDay() === 0) {
+      nextDate.setDate(nextDate.getDate() + 1);
+    }
+
+    return formatDateStr(nextDate);
+  };
+
+  const openScheduleModal = () => {
+    const nextDateStr = getSmartNextExamDate(examTimetable);
+    const scheduledSubjectIds = new Set(examTimetable.map((t) => (t.subjectId?._id || t.subjectId || '').toString()));
+    const unscheduled = subjectsList.find((s) => !scheduledSubjectIds.has(s._id.toString()));
+    const initialSubjectId = unscheduled ? unscheduled._id : (subjectsList[0]?._id || '');
+
+    setScheduleForm({
+      subjectId: initialSubjectId,
+      examDate: nextDateStr,
+      startTime: '09:00 AM',
+      endTime: '12:00 PM',
+      maxMarks: 100,
+      passMarks: 40,
+    });
+
+    setIsScheduleModalOpen(true);
+  };
+
   const handleScheduleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedExamId || !selectedClassId || !scheduleForm.subjectId) {
@@ -663,7 +731,7 @@ export default function ExamManager() {
             {/* Teacher Schedule Button (Class Teachers Enabled) */}
             {isTeacher && (
               <button
-                onClick={() => setIsScheduleModalOpen(true)}
+                onClick={openScheduleModal}
                 className="px-4 py-2 text-white font-extrabold rounded-2xl text-xs shadow-md shadow-indigo-600/20 flex items-center gap-1.5 transition-all cursor-pointer bg-indigo-600 hover:bg-indigo-700"
               >
                 <Plus className="w-4 h-4" />
@@ -1007,6 +1075,11 @@ export default function ExamManager() {
                   onChange={(e) => setScheduleForm({ ...scheduleForm, examDate: e.target.value })}
                   className="w-full px-3 py-2 border rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-500"
                 />
+                {parseDateStr(scheduleForm.examDate)?.getDay() === 0 ? (
+                  <p className="text-[10px] text-rose-600 font-bold mt-1">⚠️ Selected date is a Sunday!</p>
+                ) : (
+                  <p className="text-[10px] text-emerald-600 font-medium mt-1">✓ Auto-advanced (+1 day, Sundays skipped)</p>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Timing</label>
