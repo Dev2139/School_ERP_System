@@ -9,6 +9,7 @@ router.get('/structures', feeController.getFeeStructures);
 router.post('/structures', authorizeRoles('admin', 'accountant'), feeController.createFeeStructure);
 
 router.get('/student-fees', feeController.getStudentFees);
+router.get('/lookup', feeController.lookupStudentFeeAccount);
 router.post('/payments', authorizeRoles('admin', 'accountant'), feeController.recordPayment);
 router.get('/payments', feeController.getPayments);
 router.get('/receipt/:id', feeController.downloadReceipt);

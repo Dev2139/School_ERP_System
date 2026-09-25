@@ -142,3 +142,42 @@ exports.downloadReceipt = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.lookupStudentFeeAccount = async (req, res, next) => {
+  try {
+    const { query } = req.query;
+    if (!query) {
+      return res.status(400).json({ success: false, message: 'Search query (email, admission number, or name) is required' });
+    }
+
+    const cleanQuery = query.trim();
+
+    const student = await Student.findOne({
+      schoolId: req.user.schoolId,
+      $or: [
+        { email: { $regex: cleanQuery, $options: 'i' } },
+        { admissionNumber: { $regex: cleanQuery, $options: 'i' } },
+        { firstName: { $regex: cleanQuery, $options: 'i' } },
+        { lastName: { $regex: cleanQuery, $options: 'i' } },
+      ],
+    }).populate('classId sectionId');
+
+    if (!student) {
+      return res.status(404).json({ success: false, message: `No student record found matching '${query}'` });
+    }
+
+    const fees = await StudentFee.find({ schoolId: req.user.schoolId, studentId: student._id }).populate('feeStructureId');
+    const payments = await Payment.find({ schoolId: req.user.schoolId, studentId: student._id }).sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        student,
+        fees,
+        payments,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
