@@ -1,54 +1,50 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ScrollToTop from './components/ScrollToTop';
 import Navbar from './components/Navbar';
-import HeroSection from './components/HeroSection';
-import ParentCompanySection from './components/ParentCompanySection';
-import FeaturesGrid from './components/FeaturesGrid';
-import InteractiveDemo from './components/InteractiveDemo';
-import PricingSection from './components/PricingSection';
-import TestimonialsSection from './components/TestimonialsSection';
-import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
 import FreeTrialModal from './components/FreeTrialModal';
+
+import HomePage from './pages/HomePage';
+import FeaturesPage from './pages/FeaturesPage';
+import PricingPage from './pages/PricingPage';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import DemoPage from './pages/DemoPage';
 
 export default function App() {
   const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
 
-  const handleOpenModal = () => setIsTrialModalOpen(true);
-  const handleCloseModal = () => setIsTrialModalOpen(false);
+  const handleOpenTrialModal = () => setIsTrialModalOpen(true);
+  const handleCloseTrialModal = () => setIsTrialModalOpen(false);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-['Inter',sans-serif] relative overflow-hidden">
-      
-      {/* Navigation Bar */}
-      <Navbar onOpenTrialModal={handleOpenModal} />
+    <Router>
+      <ScrollToTop />
+      <div className="min-h-screen bg-slate-950 text-slate-100 font-['Inter',sans-serif] relative overflow-hidden flex flex-col justify-between">
+        
+        {/* Navigation Bar */}
+        <Navbar onOpenTrialModal={handleOpenTrialModal} />
 
-      {/* Main Showcase Hero */}
-      <HeroSection onOpenTrialModal={handleOpenModal} />
+        {/* Multi-Page Routes */}
+        <main className="grow">
+          <Routes>
+            <Route path="/" element={<HomePage onOpenTrialModal={handleOpenTrialModal} />} />
+            <Route path="/features" element={<FeaturesPage onOpenTrialModal={handleOpenTrialModal} />} />
+            <Route path="/pricing" element={<PricingPage onOpenTrialModal={handleOpenTrialModal} />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/demo" element={<DemoPage />} />
+          </Routes>
+        </main>
 
-      {/* Parent Company Showcase: Devdhara Technology (devdhar.in) */}
-      <ParentCompanySection />
+        {/* Footer */}
+        <Footer />
 
-      {/* Modular Features Grid */}
-      <FeaturesGrid onOpenTrialModal={handleOpenModal} />
+        {/* Global 14-Day Free Trial Modal */}
+        <FreeTrialModal isOpen={isTrialModalOpen} onClose={handleCloseTrialModal} />
 
-      {/* Interactive Live Role Simulator */}
-      <InteractiveDemo onOpenTrialModal={handleOpenModal} />
-
-      {/* Pricing Plans */}
-      <PricingSection onOpenTrialModal={handleOpenModal} />
-
-      {/* Social Proof & Testimonials */}
-      <TestimonialsSection />
-
-      {/* Contact Us Form */}
-      <ContactSection />
-
-      {/* Footer */}
-      <Footer />
-
-      {/* 14-Day Free Trial Modal Form */}
-      <FreeTrialModal isOpen={isTrialModalOpen} onClose={handleCloseModal} />
-
-    </div>
+      </div>
+    </Router>
   );
 }
