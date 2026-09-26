@@ -586,23 +586,28 @@ export default function Dashboard() {
   // -------------------------------------------------------------------
   // 3. STUDENT DASHBOARD: Real-Time Profile, Fee Ledger & Notifications
   // -------------------------------------------------------------------
+  // -------------------------------------------------------------------
+  // 3. STUDENT DASHBOARD: Real-Time Profile, Fee Ledger & Notifications
+  // -------------------------------------------------------------------
   if (role === 'student') {
     const sObj = studentProfile?.student || studentProfile || {};
     const sFees = studentProfile?.fees || [];
+    const sFeeStructures = studentProfile?.feeStructures || [];
     const sHomework = studentProfile?.homework || [];
+    const sNotices = studentProfile?.notices?.length ? studentProfile.notices : studentNotices;
 
     const studentInfo = {
       _id: sObj._id || user?.profileId?._id || user?.profileId,
-      firstName: sObj.firstName || user?.username || 'Alex',
-      lastName: sObj.lastName || 'Pendelton',
-      email: sObj.email || user?.email || 'student@school.com',
-      phone: sObj.phone || '+1 555-0111',
-      dob: sObj.dob || '2013-01-01',
-      fatherName: sObj.fatherName || 'Arthur Pendelton',
-      fatherPhone: sObj.fatherPhone || '+1 555-0199',
-      motherName: sObj.motherName || 'Clara Pendelton',
-      motherPhone: sObj.motherPhone || '+1 555-0198',
-      program: sObj.classId?.name ? `${sObj.classId.name} - ${sObj.sectionId?.name || 'Section A'}` : 'Class 7 - Section A',
+      firstName: sObj.firstName || user?.username || 'Student',
+      lastName: sObj.lastName || '',
+      email: sObj.email || user?.email || '',
+      phone: sObj.phone || sObj.parentId?.phone || '',
+      dob: sObj.dob || '',
+      fatherName: sObj.fatherName || sObj.parentId?.fatherName || sObj.parentId?.name || 'N/A',
+      fatherPhone: sObj.fatherPhone || sObj.parentId?.fatherPhone || sObj.parentId?.phone || 'N/A',
+      motherName: sObj.motherName || sObj.parentId?.motherName || 'N/A',
+      motherPhone: sObj.motherPhone || sObj.parentId?.motherPhone || 'N/A',
+      program: sObj.program || (sObj.classId?.name ? `${sObj.classId.name}${sObj.sectionId?.name ? ' - ' + sObj.sectionId.name : ''}` : 'General Class'),
       registrationNo: sObj.admissionNumber || sObj.registrationNo || 'ADM-2026-001',
       studentId: sObj.studentId || 'STU-1001',
       category: sObj.category || 'Regular Student',
@@ -618,20 +623,34 @@ export default function Dashboard() {
       bloodGroup: sObj.bloodGroup || 'O+',
     };
 
-    // Prepare Fee Ledger Rows
-    const feeRows = sFees.length > 0
-      ? sFees.map((f, i) => ({
-          term: f.feeStructureId?.feeHead || `Term ${i + 1}`,
-          total: f.feeStructureId?.amount || 1500,
-          prevPaid: 0,
-          paid: f.amountPaid || 1500,
-          due: Math.max(0, (f.feeStructureId?.amount || 1500) - (f.amountPaid || 1500)),
-        }))
-      : [
-          { term: 'Term 1 (Tuition)', total: 1500, prevPaid: 0, paid: 1500, due: 0 },
-          { term: 'Term 2 (Tuition)', total: 1500, prevPaid: 0, paid: 1500, due: 0 },
-          { term: 'Term 3 (Tuition)', total: 1500, prevPaid: 0, paid: 0, due: 1500 },
-        ];
+    // Prepare Real Fee Ledger Rows
+    let feeRows = [];
+    if (sFees.length > 0) {
+      feeRows = sFees.map((f, i) => {
+        const net = f.netAmount ?? f.feeStructureId?.totalAmount ?? 1500;
+        const paid = f.paidAmount ?? 0;
+        const due = f.balanceAmount ?? Math.max(0, net - paid);
+        return {
+          term: f.feeStructureId?.title || `Term ${i + 1}`,
+          total: net,
+          prevPaid: f.discountAmount || 0,
+          paid: paid,
+          due: due,
+        };
+      });
+    } else if (sFeeStructures.length > 0) {
+      feeRows = sFeeStructures.map((fs, i) => ({
+        term: fs.title || `Term ${i + 1}`,
+        total: fs.totalAmount || 0,
+        prevPaid: 0,
+        paid: 0,
+        due: fs.totalAmount || 0,
+      }));
+    } else {
+      feeRows = [
+        { term: 'Term 1 (Academic Fee)', total: 1500, prevPaid: 0, paid: 1500, due: 0 },
+      ];
+    }
 
     const feeTotal = feeRows.reduce((acc, r) => ({
       total: acc.total + r.total,
@@ -640,19 +659,30 @@ export default function Dashboard() {
       due: acc.due + r.due,
     }), { total: 0, prevPaid: 0, paid: 0, due: 0 });
 
-    // Notices Filter
-    const noticesList = studentNotices.length > 0 ? studentNotices : [
-      { _id: '1', title: 'Annual School Sports Meet Registration', content: 'Register with physical education department', createdAt: '2026-02-18' },
-      { _id: '2', title: 'Mid-Term Examination Schedule Released', content: 'Download timetable for Class 7-10', createdAt: '2026-08-04' },
-      { _id: '3', title: 'Science Exhibition Entry & Submission Notice', content: 'Submit project abstracts before deadline', createdAt: '2026-08-17' },
-      { _id: '4', title: 'Library Book Return & Fine Waiver Week', content: 'Return overdue books with zero fine', createdAt: '2026-08-18' },
+    // Notices List
+    const noticesList = sNotices.length > 0 ? sNotices : [
+      { _id: '1', title: 'Annual Sports Day Meet Announcement', content: 'Here we are announcing the annual sports meet for all students.', createdAt: new Date().toISOString() },
     ];
 
+    // Filter Placement News & Opportunities
+    const placementNewsList = noticesList.filter(
+      (n) =>
+        n.title?.toLowerCase().includes('placement') ||
+        n.title?.toLowerCase().includes('meet') ||
+        n.title?.toLowerCase().includes('opportunity') ||
+        n.title?.toLowerCase().includes('sports') ||
+        n.title?.toLowerCase().includes('event')
+    );
+    const placementNewsToRender = placementNewsList.length > 0 ? placementNewsList : noticesList.slice(0, 3);
+
     // Homework Assignments Filter
-    const homeworkList = sHomework.length > 0 ? sHomework : [
-      { _id: 'hw1', subject: 'Mathematics (Algebra)', title: 'Chapter 5 Quadratic Equations Worksheet', dueDate: '2026-08-21T17:00:00.000Z' },
-      { _id: 'hw2', subject: 'Science (Physics)', title: 'Lab Experiment Report on Optics', dueDate: '2026-08-21T23:00:00.000Z' },
-    ];
+    const homeworkList = sHomework.map((hw) => ({
+      _id: hw._id,
+      subject: hw.subjectId?.name || hw.subject || 'General Assignment',
+      title: hw.title || 'Homework Assignment',
+      dueDate: hw.dueDate,
+      allowOnlineSubmission: hw.allowOnlineSubmission ?? false,
+    }));
 
     return (
       <div className="space-y-6">
@@ -694,7 +724,7 @@ export default function Dashboard() {
                 />
                 <button
                   onClick={() => setIsEditProfileModalOpen(true)}
-                  className="absolute bottom-1 right-1 p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md transition-all"
+                  className="absolute bottom-1 right-1 p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md transition-all cursor-pointer"
                   title="Change Photo / Edit Details"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
@@ -731,34 +761,34 @@ export default function Dashboard() {
               <div className="flex justify-between py-1">
                 <span className="text-slate-400 font-semibold">DOB:</span>
                 <span className="font-bold text-slate-700">
-                  {studentInfo.dob ? new Date(studentInfo.dob).toLocaleDateString('en-GB') : '06-10-2006'}
+                  {studentInfo.dob ? new Date(studentInfo.dob).toLocaleDateString('en-GB') : 'N/A'}
                 </span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-slate-400 font-semibold">Student Contact:</span>
-                <span className="font-bold text-slate-700">{studentInfo.phone}</span>
+                <span className="font-bold text-slate-700">{studentInfo.phone || 'N/A'}</span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-slate-400 font-semibold">Father:</span>
                 <span className="font-bold text-slate-800">
-                  {studentInfo.fatherName} | {studentInfo.fatherPhone}
+                  {studentInfo.fatherName} {studentInfo.fatherPhone !== 'N/A' ? `| ${studentInfo.fatherPhone}` : ''}
                 </span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-slate-400 font-semibold">Mother:</span>
                 <span className="font-bold text-slate-800">
-                  {studentInfo.motherName} | {studentInfo.motherPhone}
+                  {studentInfo.motherName} {studentInfo.motherPhone !== 'N/A' ? `| ${studentInfo.motherPhone}` : ''}
                 </span>
               </div>
               <div className="flex justify-between py-1">
                 <span className="text-slate-400 font-semibold">Email:</span>
-                <span className="font-bold text-indigo-600 truncate max-w-[170px]">{studentInfo.email}</span>
+                <span className="font-bold text-indigo-600 truncate max-w-[170px]">{studentInfo.email || 'N/A'}</span>
               </div>
             </div>
 
             <button
               onClick={() => setIsEditProfileModalOpen(true)}
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/20"
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
             >
               <Edit3 className="w-4 h-4" /> Edit & Confirm Profile
             </button>
@@ -789,7 +819,6 @@ export default function Dashboard() {
                     }`}
                   >
                     {tab}
-                    {tab === 'Circular' && <span className="bg-rose-500 text-white text-[9px] px-1.5 py-0.2 rounded-full ml-1 font-bold">0</span>}
                   </button>
                 ))}
               </div>
@@ -812,11 +841,19 @@ export default function Dashboard() {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-[10px] font-bold text-slate-400">
-                        {n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '18-Feb'}
+                        {n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'Today'}
                       </span>
-                      <button className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Download Document">
-                        <Download className="w-3.5 h-3.5" />
-                      </button>
+                      {n.fileUrl && (
+                        <a
+                          href={n.fileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                          title="Download Document"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </a>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -855,7 +892,7 @@ export default function Dashboard() {
                       {row.due > 0 ? (
                         <button
                           onClick={() => navigate('/fees')}
-                          className="px-2.5 py-1 bg-emerald-600 text-white font-bold rounded-lg text-[10px] hover:bg-emerald-700 transition-all shadow-xs"
+                          className="px-2.5 py-1 bg-emerald-600 text-white font-bold rounded-lg text-[10px] hover:bg-emerald-700 transition-all shadow-xs cursor-pointer"
                         >
                           Pay Now
                         </button>
@@ -893,10 +930,10 @@ export default function Dashboard() {
               <FileText className="w-4 h-4 text-emerald-600" /> Placement News & Opportunities
             </div>
             <div className="space-y-2 min-h-[140px]">
-              {noticesList.slice(0, 3).map((news, idx) => (
+              {placementNewsToRender.map((news, idx) => (
                 <div key={idx} className="p-3 rounded-2xl bg-amber-50/60 border border-amber-100 text-xs">
                   <div className="font-bold text-slate-800">{news.title}</div>
-                  <div className="text-slate-500 mt-0.5 text-[11px] line-clamp-1">{news.content}</div>
+                  <div className="text-slate-500 mt-0.5 text-[11px] line-clamp-2">{news.content}</div>
                 </div>
               ))}
             </div>
@@ -923,32 +960,40 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                  {homeworkList.map((hw, idx) => (
-                    <tr key={hw._id || idx} className="hover:bg-slate-50/50">
-                      <td className="py-2.5 px-2 font-bold text-slate-400">{idx + 1}</td>
-                      <td className="py-2.5 px-2 font-bold text-slate-800 max-w-[160px] truncate">
-                        {hw.subjectId?.name || hw.subject || 'DESIGN AND ANALYSIS OF ALGORITHMS'}
-                      </td>
-                      <td className="py-2.5 px-2 font-semibold text-indigo-600">{hw.title || 'Assignment 1'}</td>
-                      <td className="py-2.5 px-2 text-slate-500 text-[11px]">
-                        {hw.dueDate ? new Date(hw.dueDate).toLocaleString('en-GB') : '21-08-2026 05:00:00 PM'}
-                      </td>
-                      <td className="py-2.5 px-2 text-right">
-                        {hw.allowOnlineSubmission ? (
-                          <button
-                            onClick={() => navigate('/homework')}
-                            className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg shadow-xs transition-all whitespace-nowrap cursor-pointer"
-                          >
-                            Click here to submit
-                          </button>
-                        ) : (
-                          <span className="px-2.5 py-1 bg-slate-100 text-slate-500 font-bold text-[10px] rounded-lg border border-slate-200 whitespace-nowrap">
-                            In-Class Submission
-                          </span>
-                        )}
+                  {homeworkList.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-6 text-center text-slate-400 font-semibold text-xs">
+                        No pending assignments due!
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    homeworkList.map((hw, idx) => (
+                      <tr key={hw._id || idx} className="hover:bg-slate-50/50">
+                        <td className="py-2.5 px-2 font-bold text-slate-400">{idx + 1}</td>
+                        <td className="py-2.5 px-2 font-bold text-slate-800 max-w-[160px] truncate">
+                          {hw.subject}
+                        </td>
+                        <td className="py-2.5 px-2 font-semibold text-indigo-600">{hw.title}</td>
+                        <td className="py-2.5 px-2 text-slate-500 text-[11px]">
+                          {hw.dueDate ? new Date(hw.dueDate).toLocaleString('en-GB') : 'N/A'}
+                        </td>
+                        <td className="py-2.5 px-2 text-right">
+                          {hw.allowOnlineSubmission ? (
+                            <button
+                              onClick={() => navigate('/homework')}
+                              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg shadow-xs transition-all whitespace-nowrap cursor-pointer"
+                            >
+                              Click here to submit
+                            </button>
+                          ) : (
+                            <span className="px-2.5 py-1 bg-slate-100 text-slate-500 font-bold text-[10px] rounded-lg border border-slate-200 whitespace-nowrap">
+                              In-Class Submission
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

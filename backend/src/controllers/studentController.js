@@ -190,18 +190,33 @@ exports.getStudentById = async (req, res, next) => {
     const Document = require('../models/Document');
     const Notice = require('../models/Notice');
 
+    const FeeStructure = require('../models/FeeStructure');
+
     const results = await Result.find({ studentId: student._id }).populate('examinationId');
     const fees = await StudentFee.find({ studentId: student._id }).populate('feeStructureId');
+    
+    // Fallback: If no individual student fee records exist, fetch Class Fee Structure
+    let feeStructures = [];
+    if (fees.length === 0 && classIdVal) {
+      feeStructures = await FeeStructure.find({ classId: classIdVal });
+    }
+
     const homework = (classIdVal && sectionIdVal)
-      ? await Homework.find({ classId: classIdVal, sectionId: sectionIdVal }).sort({ dueDate: -1 })
-      : (classIdVal ? await Homework.find({ classId: classIdVal }).sort({ dueDate: -1 }) : []);
+      ? await Homework.find({ classId: classIdVal, sectionId: sectionIdVal }).populate('subjectId').populate('teacherId', 'name').sort({ dueDate: -1 })
+      : (classIdVal ? await Homework.find({ classId: classIdVal }).populate('subjectId').populate('teacherId', 'name').sort({ dueDate: -1 }) : []);
 
     const subjects = classIdVal
       ? await Subject.find({ classId: classIdVal }).populate('teacherId', 'name email phone qualification')
       : await Subject.find({ schoolId: student.schoolId }).populate('teacherId', 'name email phone qualification').limit(10);
 
     const documents = await Document.find({ relatedEntityId: student._id });
-    const notices = await Notice.find({ schoolId: student.schoolId }).sort({ createdAt: -1 }).limit(10);
+    const notices = await Notice.find({
+      schoolId: student.schoolId || req.user?.schoolId,
+      $or: [
+        { targetAudience: { $in: ['everyone', 'students'] } },
+        ...(classIdVal ? [{ targetClassId: classIdVal }] : []),
+      ],
+    }).sort({ createdAt: -1 }).limit(15);
 
     res.status(200).json({
       success: true,
@@ -211,6 +226,7 @@ exports.getStudentById = async (req, res, next) => {
         attendanceRecords,
         results,
         fees,
+        feeStructures,
         homework,
         subjects,
         documents,
