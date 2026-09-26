@@ -8,11 +8,22 @@ const syncTeachersAndSubjects = require('../utils/syncTeachersSubjects');
 async function resolveSubjectsFromInput(schoolId, subjectsInput) {
   if (!subjectsInput) return { subjectIds: [], names: [] };
   
-  let names = [];
+  let rawNames = [];
   if (typeof subjectsInput === 'string') {
-    names = subjectsInput.split(',').map((s) => s.trim()).filter(Boolean);
+    rawNames = subjectsInput.split(',').map((s) => s.trim()).filter(Boolean);
   } else if (Array.isArray(subjectsInput)) {
-    names = subjectsInput.map((s) => (typeof s === 'string' ? s.trim() : s.name)).filter(Boolean);
+    rawNames = subjectsInput.map((s) => (typeof s === 'string' ? s.trim() : s.name)).filter(Boolean);
+  }
+
+  // Deduplicate case-insensitively
+  const names = [];
+  const seen = new Set();
+  for (const n of rawNames) {
+    const lower = n.toLowerCase();
+    if (!seen.has(lower)) {
+      seen.add(lower);
+      names.push(n);
+    }
   }
 
   let fallbackClass = await Class.findOne({ schoolId });

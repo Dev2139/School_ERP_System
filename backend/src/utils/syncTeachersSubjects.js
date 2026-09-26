@@ -6,7 +6,7 @@ const User = require('../models/User');
 
 async function syncTeachersAndSubjects() {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/school_erp';
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/school_erp';
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(mongoUri);
     }
@@ -35,15 +35,19 @@ async function syncTeachersAndSubjects() {
         const matchingSubjects = await Subject.find({ name: new RegExp(`^${subjName}$`, 'i') });
         const matchingIds = matchingSubjects.map(s => s._id);
 
-        // Update Subject teacherId
-        await Subject.updateMany({ _id: { $in: matchingIds } }, { teacherId: t._id });
+        if (matchingIds.length > 0) {
+          // Update Subject teacherId for all matching subjects across classes
+          await Subject.updateMany({ _id: { $in: matchingIds } }, { teacherId: t._id });
+          // Store only 1 primary subject ID per teacher (1 teacher = 1 subject)
+          t.subjects = [matchingIds[0]];
+        } else {
+          t.subjects = [];
+        }
 
-        // Update Teacher subjects array & qualification
-        t.subjects = matchingIds;
         t.qualification = subjName;
         await t.save();
 
-        console.log(`Synced teacher ${t.name} (${t.email}) with ${matchingIds.length} '${subjName}' class subjects.`);
+        console.log(`Synced teacher ${t.name} (${t.email}) with 1 '${subjName}' subject.`);
       }
     }
   } catch (err) {

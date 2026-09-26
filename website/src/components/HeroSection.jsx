@@ -4,14 +4,14 @@ import { Sparkles, ArrowRight, ShieldCheck, CheckCircle2, Play, Users, Award, Cr
 export default function HeroSection({ onOpenTrialModal }) {
   return (
     <div className="relative pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden bg-radial-gradient">
-      
-      {/* Background Decorative Glow Circles */}
+
+
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/15 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute top-1/3 right-10 w-[400px] h-[400px] bg-sky-500/10 rounded-full blur-[120px] pointer-events-none" />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        
-        {/* Parent Company Badge */}
+
+
         <div className="flex justify-center mb-6">
           <a
             href="https://devdhar.in"
@@ -23,7 +23,7 @@ export default function HeroSection({ onOpenTrialModal }) {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
             </span>
-            <span>Developed by Devdhara Technology</span>
+            <span>Developed by Devdhara Technologies</span>
             <span className="text-slate-400 font-normal">|</span>
             <span className="text-sky-400 font-mono flex items-center gap-1 group-hover:underline">
               devdhar.in <ExternalLink className="w-3 h-3" />
@@ -31,7 +31,6 @@ export default function HeroSection({ onOpenTrialModal }) {
           </a>
         </div>
 
-        {/* Main Headline & Subtitle */}
         <div className="text-center max-w-4xl mx-auto space-y-6">
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.1] text-white">
             Transform Your School Operations With <span className="text-gradient-primary">Greenwood ERP</span>
@@ -80,7 +79,7 @@ export default function HeroSection({ onOpenTrialModal }) {
         {/* Product UI Preview Mockup Showcase */}
         <div className="mt-14 relative max-w-5xl mx-auto">
           <div className="rounded-3xl p-3 bg-gradient-to-b from-indigo-500/20 via-slate-800/40 to-slate-950 border border-slate-700/60 shadow-2xl shadow-indigo-950/80">
-            
+
             {/* Top Window Bar */}
             <div className="bg-slate-900/90 rounded-t-2xl px-4 py-3 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -97,7 +96,7 @@ export default function HeroSection({ onOpenTrialModal }) {
 
             {/* Dashboard UI Simulation Preview */}
             <div className="bg-slate-950 p-6 rounded-b-2xl space-y-6">
-              
+
               {/* Header Stats Bar */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-800/40 text-left">

@@ -33,13 +33,19 @@ export default function LeaveManager() {
   const [leavesData, setLeavesData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal State
+  // Apply Leave Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [leaveType, setLeaveType] = useState('casual');
   const [submitting, setSubmitting] = useState(false);
+
+  // Review / Remark Modal State
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedLeave, setSelectedLeave] = useState(null);
+  const [reviewAction, setReviewAction] = useState('approved'); // 'approved' | 'rejected'
+  const [reviewComments, setReviewComments] = useState('');
 
   useEffect(() => {
     fetchLeaves();
@@ -88,30 +94,49 @@ export default function LeaveManager() {
     }
   };
 
-  const handleStatusUpdate = async (id, status, comments = '') => {
+  const handleOpenReviewModal = (leave, action) => {
+    setSelectedLeave(leave);
+    setReviewAction(action);
+    setReviewComments('');
+    setIsReviewModalOpen(true);
+  };
+
+  const handleConfirmReview = async (e) => {
+    e.preventDefault();
+    if (!selectedLeave) return;
+    setSubmitting(true);
     try {
-      const res = await api.put(`/leave/${id}/status`, {
-        status,
-        reviewComments: comments || (isTeacher ? 'Reviewed by Class Teacher' : 'Reviewed by Principal'),
+      const defaultNote = reviewAction === 'approved'
+        ? (isTeacher ? 'Approved by Class Teacher' : 'Approved by Principal')
+        : (isTeacher ? 'Rejected by Class Teacher' : 'Rejected by Principal');
+
+      const res = await api.put(`/leave/${selectedLeave._id}/status`, {
+        status: reviewAction,
+        reviewComments: reviewComments.trim() || defaultNote,
       });
       if (res.data.success) {
         addToast(
           isTeacher
-            ? status === 'approved'
+            ? reviewAction === 'approved'
               ? 'Approved and forwarded to Principal for final sign-off!'
               : 'Student leave request rejected.'
-            : `Leave request ${status}!`,
+            : `Leave request ${reviewAction}!`,
           'success'
         );
+        setIsReviewModalOpen(false);
+        setSelectedLeave(null);
+        setReviewComments('');
         fetchLeaves();
       }
     } catch (err) {
       addToast(err.response?.data?.message || 'Status update failed', 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   // Helper status badge renderer
-  const renderStatusBadge = (status) => {
+  const renderStatusBadge = (status, item = {}) => {
     switch (status) {
       case 'pending_class_teacher':
         return (
@@ -122,7 +147,8 @@ export default function LeaveManager() {
       case 'pending_principal':
         return (
           <span className="px-2.5 py-1 bg-sky-50 text-sky-800 border border-sky-200 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 w-fit">
-            <UserCheck className="w-3 h-3 text-sky-600" /> Approved by Teacher (Pending Principal)
+            <UserCheck className="w-3 h-3 text-sky-600" />
+            {item?.userRole === 'teacher' ? 'Pending Principal Approval' : 'Class Teacher Approved (Pending Principal)'}
           </span>
         );
       case 'approved':
@@ -301,7 +327,7 @@ export default function LeaveManager() {
                   <th className="py-3 px-4">Dates</th>
                   <th className="py-3 px-4">Reason</th>
                   <th className="py-3 px-4">Workflow Status</th>
-                  <th className="py-3 px-4">Class Teacher Review</th>
+                  <th className="py-3 px-4">Teacher / Principal Remarks</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -319,18 +345,23 @@ export default function LeaveManager() {
                         {new Date(l.startDate).toLocaleDateString()} → {new Date(l.endDate).toLocaleDateString()}
                       </td>
                       <td className="py-3.5 px-4 text-slate-800 max-w-xs">{l.reason}</td>
-                      <td className="py-3.5 px-4">{renderStatusBadge(l.status)}</td>
-                      <td className="py-3.5 px-4 text-slate-500">
-                        {l.classTeacherApproval?.status === 'approved' ? (
-                          <span className="text-emerald-600 font-bold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Approved by Teacher
-                          </span>
-                        ) : l.classTeacherApproval?.status === 'rejected' ? (
-                          <span className="text-rose-600 font-bold flex items-center gap-1">
-                            <XCircle className="w-3.5 h-3.5" /> Rejected by Teacher
-                          </span>
-                        ) : (
-                          <span className="text-slate-400">Awaiting Class Teacher Review</span>
+                      <td className="py-3.5 px-4">{renderStatusBadge(l.status, l)}</td>
+                      <td className="py-3.5 px-4 text-slate-600">
+                        {l.principalApproval?.comments && (
+                          <div className="text-[11px] mb-0.5">
+                            <strong className="text-indigo-600 font-extrabold">Principal:</strong> {l.principalApproval.comments}
+                          </div>
+                        )}
+                        {l.classTeacherApproval?.comments && (
+                          <div className="text-[11px]">
+                            <strong className="text-emerald-600 font-extrabold">Teacher:</strong> {l.classTeacherApproval.comments}
+                          </div>
+                        )}
+                        {!l.principalApproval?.comments && !l.classTeacherApproval?.comments && l.reviewComments && (
+                          <div className="text-[11px] text-slate-500">{l.reviewComments}</div>
+                        )}
+                        {!l.principalApproval?.comments && !l.classTeacherApproval?.comments && !l.reviewComments && (
+                          <span className="text-slate-400 font-normal">No remarks added</span>
                         )}
                       </td>
                     </tr>
@@ -376,29 +407,34 @@ export default function LeaveManager() {
                           {new Date(l.startDate).toLocaleDateString()} → {new Date(l.endDate).toLocaleDateString()}
                         </td>
                         <td className="py-3.5 px-4 text-slate-800 max-w-xs">{l.reason}</td>
-                        <td className="py-3.5 px-4">{renderStatusBadge(l.status)}</td>
+                        <td className="py-3.5 px-4">{renderStatusBadge(l.status, l)}</td>
                         <td className="py-3.5 px-4 text-right">
                           {l.status === 'pending_class_teacher' ? (
                             <div className="flex items-center justify-end gap-2">
                               <button
-                                onClick={() => handleStatusUpdate(l._id, 'approved', 'Approved by Class Teacher')}
+                                onClick={() => handleOpenReviewModal(l, 'approved')}
                                 className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
                               >
-                                Approve & Forward to Principal
+                                Approve & Add Remark
                               </button>
                               <button
-                                onClick={() => handleStatusUpdate(l._id, 'rejected', 'Rejected by Class Teacher')}
+                                onClick={() => handleOpenReviewModal(l, 'rejected')}
                                 className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
                               >
                                 Reject
                               </button>
                             </div>
                           ) : (
-                            <span className="text-xs text-slate-400 font-bold">
-                              {l.status === 'pending_principal'
-                                ? 'Forwarded to Principal'
-                                : 'Processed'}
-                            </span>
+                            <div className="text-xs text-slate-500 font-medium">
+                              <span className="font-bold text-slate-700 block">
+                                {l.status === 'pending_principal' ? 'Forwarded to Principal' : 'Processed'}
+                              </span>
+                              {l.classTeacherApproval?.comments && (
+                                <span className="text-[10px] text-slate-400 block italic">
+                                  Note: {l.classTeacherApproval.comments}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -417,12 +453,13 @@ export default function LeaveManager() {
                     <th className="py-3 px-4">Dates</th>
                     <th className="py-3 px-4">Reason</th>
                     <th className="py-3 px-4">Principal Approval Status</th>
+                    <th className="py-3 px-4">Principal Remarks</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
                   {teacherOwnLeaves.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="py-12 text-center text-slate-400">
+                      <td colSpan={5} className="py-12 text-center text-slate-400">
                         You have not submitted any personal leave requests.
                       </td>
                     </tr>
@@ -434,7 +471,16 @@ export default function LeaveManager() {
                           {new Date(l.startDate).toLocaleDateString()} → {new Date(l.endDate).toLocaleDateString()}
                         </td>
                         <td className="py-3.5 px-4 text-slate-800 max-w-xs">{l.reason}</td>
-                        <td className="py-3.5 px-4">{renderStatusBadge(l.status)}</td>
+                        <td className="py-3.5 px-4">{renderStatusBadge(l.status, l)}</td>
+                        <td className="py-3.5 px-4 text-slate-600 font-medium">
+                          {l.principalApproval?.comments || l.reviewComments ? (
+                            <span className="text-xs text-indigo-700 font-semibold">
+                              {l.principalApproval?.comments || l.reviewComments}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 font-normal">No remarks added yet</span>
+                          )}
+                        </td>
                       </tr>
                     ))
                   )}
@@ -454,7 +500,8 @@ export default function LeaveManager() {
                   <th className="py-3 px-4">Dates</th>
                   <th className="py-3 px-4">Reason</th>
                   <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Principal Final Sign-Off</th>
+                  <th className="py-3 px-4">Reviewer Remarks</th>
+                  <th className="py-3 px-4 text-right">Principal Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
@@ -465,7 +512,7 @@ export default function LeaveManager() {
                   : principalArchive
                 ).length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400">
+                    <td colSpan={8} className="py-12 text-center text-slate-400">
                       No leave applications found in this view.
                     </td>
                   </tr>
@@ -486,18 +533,33 @@ export default function LeaveManager() {
                         {new Date(l.startDate).toLocaleDateString()} → {new Date(l.endDate).toLocaleDateString()}
                       </td>
                       <td className="py-3.5 px-4 text-slate-800 max-w-xs">{l.reason}</td>
-                      <td className="py-3.5 px-4">{renderStatusBadge(l.status)}</td>
+                      <td className="py-3.5 px-4">{renderStatusBadge(l.status, l)}</td>
+                      <td className="py-3.5 px-4 text-slate-600">
+                        {l.principalApproval?.comments && (
+                          <div className="text-[11px]">
+                            <strong className="text-indigo-600 font-bold">Principal Note:</strong> {l.principalApproval.comments}
+                          </div>
+                        )}
+                        {l.classTeacherApproval?.comments && (
+                          <div className="text-[11px]">
+                            <strong className="text-emerald-600 font-bold">Teacher Note:</strong> {l.classTeacherApproval.comments}
+                          </div>
+                        )}
+                        {!l.principalApproval?.comments && !l.classTeacherApproval?.comments && (
+                          <span className="text-slate-400 font-normal">None</span>
+                        )}
+                      </td>
                       <td className="py-3.5 px-4 text-right">
                         {l.status === 'pending_principal' ? (
                           <div className="flex items-center justify-end gap-2">
                             <button
-                              onClick={() => handleStatusUpdate(l._id, 'approved', 'Approved by Principal')}
+                              onClick={() => handleOpenReviewModal(l, 'approved')}
                               className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
                             >
-                              Final Approve
+                              Approve & Add Remark
                             </button>
                             <button
-                              onClick={() => handleStatusUpdate(l._id, 'rejected', 'Rejected by Principal')}
+                              onClick={() => handleOpenReviewModal(l, 'rejected')}
                               className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
                             >
                               Reject
@@ -583,6 +645,76 @@ export default function LeaveManager() {
                 className="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50"
               >
                 {submitting ? 'Submitting...' : 'Submit Leave Request'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* REVIEW / REMARK MODAL */}
+      {isReviewModalOpen && selectedLeave && (
+        <Modal
+          isOpen={isReviewModalOpen}
+          onClose={() => {
+            setIsReviewModalOpen(false);
+            setSelectedLeave(null);
+          }}
+          title={`${reviewAction === 'approved' ? 'Approve' : 'Reject'} Leave Request`}
+        >
+          <form onSubmit={handleConfirmReview} className="space-y-4">
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-1 text-xs">
+              <div className="font-extrabold text-slate-900 text-sm">
+                Applicant: {selectedLeave.applicantName} ({selectedLeave.userRole})
+              </div>
+              <div className="text-slate-600 font-medium">
+                Reason: <span className="font-semibold text-slate-800">{selectedLeave.reason}</span>
+              </div>
+              <div className="text-slate-500 font-mono font-bold">
+                Dates: {new Date(selectedLeave.startDate).toLocaleDateString()} → {new Date(selectedLeave.endDate).toLocaleDateString()}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-indigo-600 uppercase mb-1">
+                Note / Remark for Applicant
+              </label>
+              <textarea
+                rows={3}
+                value={reviewComments}
+                onChange={(e) => setReviewComments(e.target.value)}
+                placeholder={
+                  reviewAction === 'approved'
+                    ? 'Enter approval remark or note (e.g. Approved. Please submit pending assignments upon return)...'
+                    : 'Enter rejection reason or remark (e.g. Rejected due to upcoming term examination)...'
+                }
+                className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">This note/remark will be visible to the applicant on their leave dashboard.</p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsReviewModalOpen(false);
+                  setSelectedLeave(null);
+                }}
+                className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className={`px-4 py-2 text-xs font-bold text-white rounded-xl shadow-md transition-all disabled:opacity-50 ${
+                  reviewAction === 'approved' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'
+                }`}
+              >
+                {submitting
+                  ? 'Submitting Decision...'
+                  : reviewAction === 'approved'
+                  ? 'Confirm Approval'
+                  : 'Confirm Rejection'}
               </button>
             </div>
           </form>

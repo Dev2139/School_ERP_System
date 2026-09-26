@@ -78,7 +78,7 @@ export default function Dashboard() {
       fetchTeacherAssignedData();
     } else if (role === 'parent') {
       fetchMyChildren();
-    } else if (role === 'student' && user?.profileId) {
+    } else if (role === 'student') {
       fetchStudentProfile();
       fetchStudentNotices();
     }
@@ -166,7 +166,7 @@ export default function Dashboard() {
 
   const fetchStudentProfile = async () => {
     try {
-      const pid = user.profileId._id || user.profileId;
+      const pid = user?.profileId?._id || user?.profileId || 'profile';
       const res = await api.get(`/students/${pid}`);
       if (res.data.success) {
         setStudentProfile(res.data.data);
@@ -892,6 +892,7 @@ export default function Dashboard() {
               ...prev,
               student: updatedStudent,
             }));
+            fetchStudentProfile();
           }}
         />
       </div>

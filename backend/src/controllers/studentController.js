@@ -186,11 +186,22 @@ exports.getStudentById = async (req, res, next) => {
       if (rec && attendanceStats[rec.status] !== undefined) attendanceStats[rec.status]++;
     });
 
+    const Subject = require('../models/Subject');
+    const Document = require('../models/Document');
+    const Notice = require('../models/Notice');
+
     const results = await Result.find({ studentId: student._id }).populate('examinationId');
     const fees = await StudentFee.find({ studentId: student._id }).populate('feeStructureId');
     const homework = (classIdVal && sectionIdVal)
       ? await Homework.find({ classId: classIdVal, sectionId: sectionIdVal }).sort({ dueDate: -1 })
       : (classIdVal ? await Homework.find({ classId: classIdVal }).sort({ dueDate: -1 }) : []);
+
+    const subjects = classIdVal
+      ? await Subject.find({ classId: classIdVal }).populate('teacherId', 'name email phone qualification')
+      : await Subject.find({ schoolId: student.schoolId }).populate('teacherId', 'name email phone qualification').limit(10);
+
+    const documents = await Document.find({ relatedEntityId: student._id });
+    const notices = await Notice.find({ schoolId: student.schoolId }).sort({ createdAt: -1 }).limit(10);
 
     res.status(200).json({
       success: true,
@@ -201,6 +212,9 @@ exports.getStudentById = async (req, res, next) => {
         results,
         fees,
         homework,
+        subjects,
+        documents,
+        notices,
       },
     });
   } catch (error) {
@@ -296,18 +310,51 @@ exports.createStudent = async (req, res, next) => {
 
 exports.updateStudent = async (req, res, next) => {
   try {
-    const targetId = req.params.id;
+    let targetId = req.params.id;
+    const mongoose = require('mongoose');
+
+    // Resolve target student document
+    let studentToUpdate = null;
+    if (mongoose.Types.ObjectId.isValid(targetId)) {
+      studentToUpdate = await Student.findById(targetId);
+    }
+
+    if (!studentToUpdate && req.user.role === 'student') {
+      studentToUpdate = await Student.findOne({
+        $or: [
+          ...(req.user.profileId ? [{ _id: req.user.profileId }] : []),
+          { userId: req.user._id },
+          { email: req.user.email },
+        ],
+      });
+    }
+
+    if (!studentToUpdate) {
+      return res.status(404).json({ success: false, message: 'Student record not found' });
+    }
+
+    targetId = studentToUpdate._id.toString();
+
+    // Authorization check for student role
     if (req.user.role === 'student') {
       const studentProfileId = req.user.profileId?._id ? req.user.profileId._id.toString() : req.user.profileId?.toString();
-      if (studentProfileId !== targetId) {
+      const isOwnerByProfile = studentProfileId === targetId;
+      const isOwnerByUser = studentToUpdate.userId && studentToUpdate.userId.toString() === req.user._id.toString();
+      const isOwnerByEmail = studentToUpdate.email && req.user.email && studentToUpdate.email.toLowerCase().trim() === req.user.email.toLowerCase().trim();
+
+      if (!isOwnerByProfile && !isOwnerByUser && !isOwnerByEmail) {
         return res.status(403).json({ success: false, message: 'Forbidden. You can only update your own student profile.' });
+      }
+
+      // Link User profileId if missing or unlinked
+      if (!req.user.profileId) {
+        await User.findByIdAndUpdate(req.user._id, { profileId: studentToUpdate._id, profileModel: 'Student' });
       }
     }
 
     const updateData = { ...req.body };
-    const mongoose = require('mongoose');
 
-    // Remove empty string or invalid ObjectId values so Mongoose doesn't throw BSONError
+    // Remove empty string or invalid ObjectId values
     ['classId', 'sectionId', 'parentId', 'academicYearId', 'userId', 'schoolId'].forEach((field) => {
       if (
         updateData[field] === '' ||

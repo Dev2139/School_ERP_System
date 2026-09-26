@@ -84,9 +84,11 @@ export default function TeacherList() {
 
   const handleOpenEditModal = (teacher) => {
     setEditingTeacherId(teacher._id);
-    const existingSubjects = teacher.subjects && teacher.subjects.length > 0
-      ? teacher.subjects.map((s) => s.name || s).join(', ')
-      : teacher.qualification || 'Mathematics, Science';
+    const subNames = teacher.subjects && teacher.subjects.length > 0
+      ? teacher.subjects.map((s) => (s && s.name) ? s.name : String(s))
+      : (teacher.qualification ? teacher.qualification.split(',') : ['Mathematics']);
+    const uniqueNames = Array.from(new Set(subNames.map((s) => s.trim()))).filter(Boolean);
+    const existingSubjects = uniqueNames.join(', ');
 
     setEditFormData({
       name: teacher.name || '',
@@ -160,14 +162,16 @@ export default function TeacherList() {
       header: 'Assigned Subjects',
       render: (row) => {
         const subList = row.subjects && row.subjects.length > 0
-          ? row.subjects.map((s) => s.name || s)
+          ? row.subjects.map((s) => (s && s.name) ? s.name : String(s))
           : (row.qualification ? row.qualification.split(',') : ['General Faculty']);
+
+        const uniqueSubList = Array.from(new Set(subList.map((s) => s.trim()))).filter(Boolean);
 
         return (
           <div className="flex flex-wrap gap-1 max-w-xs">
-            {subList.map((sub, i) => (
+            {uniqueSubList.map((sub, i) => (
               <span key={i} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-md text-xs font-semibold">
-                {sub.trim()}
+                {sub}
               </span>
             ))}
           </div>
