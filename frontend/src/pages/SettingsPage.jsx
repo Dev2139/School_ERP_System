@@ -7,7 +7,7 @@ import { Settings, Save, Shield, Lock, CheckCircle2 } from 'lucide-react';
 export default function SettingsPage() {
   const { user } = useAuth();
   const { addToast } = useNotification();
-  const isAdmin = ['super_admin', 'admin'].includes(user?.role);
+  const canManageSchoolConfig = user?.role === 'accountant';
 
   // School Settings State
   const [school, setSchool] = useState({
@@ -26,12 +26,13 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPass, setChangingPass] = useState(false);
+  const [savingSchool, setSavingSchool] = useState(false);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (canManageSchoolConfig) {
       fetchSchool();
     }
-  }, [user]);
+  }, [user, canManageSchoolConfig]);
 
   const fetchSchool = async () => {
     try {
@@ -46,13 +47,19 @@ export default function SettingsPage() {
 
   const handleSaveSchool = async (e) => {
     e.preventDefault();
+    setSavingSchool(true);
     try {
       const res = await api.put('/settings/school', school);
       if (res.data.success) {
-        addToast('School settings updated successfully!', 'success');
+        addToast('School system configuration saved successfully!', 'success');
+        if (res.data.data) {
+          setSchool(res.data.data);
+        }
       }
     } catch (err) {
-      addToast('Failed to save settings', 'error');
+      addToast(err.response?.data?.message || 'Failed to save configuration', 'error');
+    } finally {
+      setSavingSchool(false);
     }
   };
 
@@ -144,7 +151,7 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={changingPass}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>{changingPass ? 'Updating...' : 'Update Password'}</span>
@@ -153,8 +160,8 @@ export default function SettingsPage() {
         </form>
       </div>
 
-      {/* School Configuration (Admin / Super Admin Only) */}
-      {isAdmin && (
+      {/* School Configuration (Accounts & Admin) */}
+      {canManageSchoolConfig && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
           <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
             <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
@@ -162,49 +169,83 @@ export default function SettingsPage() {
             </div>
             <div>
               <h3 className="font-bold text-slate-800 text-base">School System Configuration</h3>
-              <p className="text-xs text-slate-400">Manage school entity details, principal name, and contact details</p>
+              <p className="text-xs text-slate-400">Manage school entity details, principal name, and official contact information</p>
             </div>
           </div>
 
           <form onSubmit={handleSaveSchool} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">School Name</label>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">School Name *</label>
                 <input
                   type="text"
-                  value={school.name}
+                  required
+                  value={school.name || ''}
                   onChange={(e) => setSchool({ ...school, name: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold"
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">School Code</label>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">School Code *</label>
                 <input
                   type="text"
-                  value={school.code}
+                  required
+                  value={school.code || ''}
                   onChange={(e) => setSchool({ ...school, code: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold font-mono"
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold font-mono focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Principal Name</label>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Principal Name *</label>
                 <input
                   type="text"
-                  value={school.principalName}
+                  required
+                  value={school.principalName || ''}
                   onChange={(e) => setSchool({ ...school, principalName: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold"
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Official Email</label>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Official Email *</label>
                 <input
                   type="email"
-                  value={school.email}
+                  required
+                  value={school.email || ''}
                   onChange={(e) => setSchool({ ...school, email: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold"
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">Phone Number</label>
+                <input
+                  type="text"
+                  value={school.phone || ''}
+                  onChange={(e) => setSchool({ ...school, phone: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">City</label>
+                <input
+                  type="text"
+                  value={school.city || ''}
+                  onChange={(e) => setSchool({ ...school, city: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase mb-1">State</label>
+                <input
+                  type="text"
+                  value={school.state || ''}
+                  onChange={(e) => setSchool({ ...school, state: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
             </div>
@@ -212,10 +253,11 @@ export default function SettingsPage() {
             <div className="flex justify-end pt-4 border-t">
               <button
                 type="submit"
-                className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs shadow-md shadow-indigo-600/20 transition-all"
+                disabled={savingSchool}
+                className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50 cursor-pointer"
               >
                 <Save className="w-4 h-4" />
-                <span>Save School Configuration</span>
+                <span>{savingSchool ? 'Saving Configuration...' : 'Save School Configuration'}</span>
               </button>
             </div>
           </form>

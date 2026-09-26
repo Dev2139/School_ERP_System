@@ -6,8 +6,8 @@ const { authenticateUser, authorizeRoles } = require('../middleware/authMiddlewa
 router.use(authenticateUser);
 
 router.get('/school', settingController.getSchoolProfile);
-router.put('/school', authorizeRoles('admin'), settingController.updateSchoolProfile);
+router.put('/school', authorizeRoles('admin', 'accountant', 'super_admin'), settingController.updateSchoolProfile);
 
-router.get('/audit-logs', authorizeRoles('admin'), settingController.getAuditLogs);
+router.get('/audit-logs', authorizeRoles('admin', 'accountant', 'super_admin'), settingController.getAuditLogs);
 
 module.exports = router;
