@@ -72,8 +72,8 @@ export default function Sidebar({ onClose }) {
     { label: 'Academic Setup', path: '/admin/sections', icon: BookOpen, roles: ['admin'] },
     { label: 'My Sections & Classes', path: getRolePath('sections'), icon: Layers, roles: ['teacher'] },
 
-    // Faculty Salary Management
-    { label: role === 'accountant' ? 'Faculty Payroll & Salary' : 'Faculty Payroll', path: getRolePath('salary'), icon: DollarSign, roles: ['admin', 'accountant'] },
+    // Financial Payroll (Accountant Portal)
+    { label: 'Faculty Payroll & Salary', path: getRolePath('salary'), icon: DollarSign, roles: ['accountant'] },
     { label: 'My Salary & Payslips', path: getRolePath('salary'), icon: DollarSign, roles: ['teacher'] },
 
     {
@@ -89,23 +89,20 @@ export default function Sidebar({ onClose }) {
       icon: Award,
       roles: ['admin', 'teacher', 'student'],
     },
-    { label: 'Homework', path: getRolePath('homework'), icon: BookMarked, roles: ['admin', 'teacher', 'student'] },
+    { label: 'Homework', path: getRolePath('homework'), icon: BookMarked, roles: ['teacher', 'student'] },
     {
       label: 'Study Material',
       path: getRolePath('study-materials'),
       icon: BookOpen,
-      roles: ['admin', 'teacher', 'student'],
+      roles: ['teacher', 'student'],
     },
 
-    { label: role === 'accountant' ? 'Fee Management & Invoicing' : 'Fees Management', path: getRolePath('fees'), icon: DollarSign, roles: ['admin', 'student', 'accountant'] },
-    { label: 'Admissions', path: '/admin/admissions', icon: UserPlus, roles: ['admin'] },
+    { label: role === 'accountant' ? 'Fee Management & Invoicing' : 'Fees Management', path: getRolePath('fees'), icon: DollarSign, roles: ['student', 'accountant'] },
+    { label: 'Admissions & Applications', path: getRolePath('admissions'), icon: UserPlus, roles: ['accountant'] },
     { label: 'Notices Board', path: getRolePath('notices'), icon: Bell, roles: ['admin', 'teacher', 'student'] },
     { label: 'School Calendar', path: getRolePath('calendar'), icon: Calendar, roles: ['admin', 'teacher', 'student'] },
     { label: 'Leave Requests', path: getRolePath('leave'), icon: CalendarDays, roles: ['admin', 'teacher', 'student'] },
-    { label: 'Library', path: '/admin/library', icon: BookOpen, roles: ['admin'] },
-    { label: 'Transport', path: '/admin/transport', icon: Bus, roles: ['admin'] },
     { label: 'Reports & Analytics', path: getRolePath('reports'), icon: BarChart3, roles: ['admin', 'accountant'] },
-    { label: 'Audit Logs', path: '/admin/audit-logs', icon: ShieldCheck, roles: ['admin'] },
     { label: 'Settings & Security', path: getRolePath('settings'), icon: Settings, roles: ['admin', 'teacher', 'student', 'accountant'] },
   ];
 

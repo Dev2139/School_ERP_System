@@ -211,3 +211,60 @@ exports.saveAttendance = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.sendAttendanceWarning = async (req, res, next) => {
+  try {
+    const { classId, sectionId, teacherId, className, sectionName, teacherName } = req.body;
+    const schoolId = req.user.schoolId;
+
+    const Teacher = require('../models/Teacher');
+    const User = require('../models/User');
+    const Notification = require('../models/Notification');
+
+    let teacherDoc = null;
+    if (teacherId) {
+      teacherDoc = await Teacher.findById(teacherId);
+    } else if (teacherName) {
+      teacherDoc = await Teacher.findOne({ schoolId, name: new RegExp(teacherName, 'i') });
+    }
+
+    const targetTeacherName = teacherName || teacherDoc?.name || 'Class Teacher';
+    const targetClassName = className ? `${className} - ${sectionName || ''}` : 'Class';
+
+    let teacherUser = null;
+    if (teacherDoc) {
+      if (teacherDoc.userId) {
+        teacherUser = await User.findById(teacherDoc.userId);
+      }
+      if (!teacherUser && teacherDoc.email) {
+        teacherUser = await User.findOne({ email: teacherDoc.email.toLowerCase().trim() });
+      }
+    }
+
+    const warningMessage = `Principal has issued an urgent warning to ${targetTeacherName}: Daily attendance for ${targetClassName} has not been taken today. Please submit attendance immediately.`;
+
+    if (teacherUser) {
+      await Notification.create({
+        schoolId,
+        recipientId: teacherUser._id,
+        title: `⚠️ URGENT ATTENDANCE WARNING: ${targetClassName}`,
+        message: warningMessage,
+        type: 'attendance',
+        link: '/teacher/attendance',
+      });
+    }
+
+    await logAudit(req, 'ATTENDANCE_WARNING_SENT', 'Notification', teacherUser ? teacherUser._id.toString() : 'warning', {
+      className,
+      sectionName,
+      teacherId,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Urgent attendance warning sent directly to ${targetTeacherName} (${targetClassName})`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

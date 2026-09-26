@@ -93,6 +93,21 @@ exports.createLeave = async (req, res, next) => {
       status: initialStatus,
     });
 
+    const Notification = require('../models/Notification');
+    if (classTeacherId) {
+      const teacherDoc = await Teacher.findById(classTeacherId);
+      if (teacherDoc && teacherDoc.userId) {
+        await Notification.create({
+          schoolId: req.user.schoolId,
+          recipientId: teacherDoc.userId,
+          title: '📩 New Student Leave Request',
+          message: `${req.user.username} submitted a leave request (${req.body.reason || 'Leave'}).`,
+          type: 'leave',
+          link: '/teacher/leave',
+        });
+      }
+    }
+
     await logAudit(req, 'LEAVE_REQUESTED', 'LeaveRequest', leave._id.toString());
     res.status(201).json({ success: true, data: leave });
   } catch (error) {
@@ -156,6 +171,19 @@ exports.updateLeaveStatus = async (req, res, next) => {
     updateFields.status = nextStatus;
 
     const updatedLeave = await LeaveRequest.findByIdAndUpdate(id, updateFields, { new: true });
+
+    const Notification = require('../models/Notification');
+    if (existingLeave.userId) {
+      await Notification.create({
+        schoolId: req.user.schoolId,
+        recipientId: existingLeave.userId,
+        title: `Leave Request ${nextStatus.toUpperCase()}`,
+        message: `Your leave request has been ${nextStatus} (${reviewComments || 'No remark'}).`,
+        type: 'leave',
+        link: '/leave',
+      });
+    }
+
     await logAudit(req, 'LEAVE_STATUS_UPDATED', 'LeaveRequest', id, { status: nextStatus });
 
     res.status(200).json({ success: true, data: updatedLeave });

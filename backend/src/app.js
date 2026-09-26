@@ -65,6 +65,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/settings', settingRoutes);
 app.use('/api/salary', require('./routes/salaryRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ success: true, message: 'School ERP API Server is Healthy', timestamp: new Date() });

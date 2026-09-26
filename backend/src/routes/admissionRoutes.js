@@ -5,7 +5,7 @@ const { authenticateUser, authorizeRoles } = require('../middleware/authMiddlewa
 
 router.use(authenticateUser);
 router.get('/', admissionController.getAdmissions);
-router.post('/', authorizeRoles('admin'), admissionController.createAdmission);
-router.put('/:id/status', authorizeRoles('admin'), admissionController.updateStatus);
+router.post('/', authorizeRoles('admin', 'accountant'), admissionController.createAdmission);
+router.put('/:id/status', authorizeRoles('admin', 'accountant'), admissionController.updateStatus);
 
 module.exports = router;

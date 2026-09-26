@@ -6,5 +6,6 @@ const { authenticateUser, authorizeRoles } = require('../middleware/authMiddlewa
 router.use(authenticateUser);
 router.get('/', attendanceController.getAttendance);
 router.post('/', authorizeRoles('admin', 'teacher'), attendanceController.saveAttendance);
+router.post('/send-warning', authorizeRoles('admin'), attendanceController.sendAttendanceWarning);
 
 module.exports = router;

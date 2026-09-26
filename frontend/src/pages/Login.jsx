@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
-import { ShieldCheck, LogIn, Sparkles, UserCheck, GraduationCap, Building2, ChevronRight, Briefcase } from 'lucide-react';
+import { ShieldCheck, LogIn, Sparkles, GraduationCap, Briefcase } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('principal@school.com');
   const [password, setPassword] = useState('06102006');
   const [activeCategory, setActiveCategory] = useState('staff'); // 'staff' | 'student'
-  const [staffCredentialType, setStaffCredentialType] = useState('principal'); // 'principal' | 'teacher'
   const [loading, setLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -51,26 +50,12 @@ export default function Login() {
   const handleCategorySelect = (category) => {
     setActiveCategory(category);
     if (category === 'staff') {
-      if (staffCredentialType === 'principal') {
-        setEmail('principal@school.com');
-      } else {
-        setEmail('manu@gmail.com');
-      }
+      setEmail('principal@school.com');
       setPassword('06102006');
     } else {
       setEmail('student@school.com');
       setPassword('06102006');
     }
-  };
-
-  const handleStaffTypeSelect = (type) => {
-    setStaffCredentialType(type);
-    if (type === 'principal') {
-      setEmail('principal@school.com');
-    } else {
-      setEmail('manu@gmail.com');
-    }
-    setPassword('06102006');
   };
 
   const handleLogin = async (e) => {
@@ -81,6 +66,7 @@ export default function Login() {
 
     if (res?.success) {
       addToast('Welcome back to Greenwood ERP!', 'success');
+      const profileId = res.user?.profileId?._id || res.user?.profileId || 'profile';
       const rolePrefix =
         res.user?.role === 'admin'
           ? '/admin'
@@ -151,39 +137,6 @@ export default function Login() {
                 <span className="text-xs">Student Login</span>
               </button>
             </div>
-
-            {/* STAFF CREDENTIAL DIFFERENTIATION SYSTEM */}
-            {activeCategory === 'staff' && (
-              <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2 animate-in fade-in duration-200">
-                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  Differentiated Credentials:
-                </span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => handleStaffTypeSelect('principal')}
-                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                      staffCredentialType === 'principal'
-                        ? 'bg-indigo-600 text-white border-indigo-500'
-                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <Building2 className="w-3 h-3" /> Principal
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleStaffTypeSelect('teacher')}
-                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                      staffCredentialType === 'teacher'
-                        ? 'bg-sky-600 text-white border-sky-500'
-                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <UserCheck className="w-3 h-3" /> Teacher
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Login Form Inputs */}

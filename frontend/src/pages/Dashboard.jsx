@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import StatCard from '../components/StatCard';
 import api from '../services/api';
+import { useNotification } from '../context/NotificationContext';
 import EditStudentProfileModal from '../components/EditStudentProfileModal';
 import {
   Users,
@@ -46,8 +47,36 @@ import {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { addToast } = useNotification();
   const navigate = useNavigate();
   const role = user?.role || 'admin';
+
+  const [warnedClasses, setWarnedClasses] = useState({});
+  const [sendingWarningKey, setSendingWarningKey] = useState(null);
+
+  const handleSendAttendanceWarning = async (item) => {
+    const itemKey = `${item.classId}_${item.sectionId}`;
+    setSendingWarningKey(itemKey);
+    try {
+      const res = await api.post('/attendance/send-warning', {
+        classId: item.classId,
+        sectionId: item.sectionId,
+        teacherId: item.classTeacherId,
+        className: item.className,
+        sectionName: item.sectionName,
+        teacherName: item.classTeacherName,
+      });
+
+      if (res.data.success) {
+        addToast(`Urgent warning sent to ${item.classTeacherName} (${item.fullClassName})!`, 'success');
+        setWarnedClasses((prev) => ({ ...prev, [itemKey]: true }));
+      }
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to send warning', 'error');
+    } finally {
+      setSendingWarningKey(null);
+    }
+  };
 
   const [metrics, setMetrics] = useState({
     totalStudents: 0,
@@ -57,6 +86,11 @@ export default function Dashboard() {
     totalCollectedFees: 0,
     totalPendingFees: 0,
     todayAttendancePercentage: 0,
+    totalPresentToday: 0,
+    totalMarkedToday: 0,
+    markedSectionsCount: 0,
+    totalSectionsCount: 0,
+    classAttendanceStatus: [],
     weeklyAttendance: [],
     gradePerformance: [],
     recentNotices: [],
@@ -180,11 +214,11 @@ export default function Dashboard() {
   const attendanceChartData = metrics.weeklyAttendance && metrics.weeklyAttendance.length > 0
     ? metrics.weeklyAttendance
     : [
-        { day: 'Mon', attendance: 96 },
-        { day: 'Tue', attendance: 94 },
-        { day: 'Wed', attendance: 98 },
-        { day: 'Thu', attendance: 92 },
-        { day: 'Fri', attendance: 95 },
+        { day: 'Mon', attendance: 0 },
+        { day: 'Tue', attendance: 0 },
+        { day: 'Wed', attendance: 0 },
+        { day: 'Thu', attendance: 0 },
+        { day: 'Fri', attendance: 0 },
       ];
 
   const feeDistributionData = [
@@ -415,8 +449,47 @@ export default function Dashboard() {
       ? `${teacherAssignedSection.className} - ${teacherAssignedSection.sectionName}`
       : 'Subject Teacher';
 
+    const teacherProfileId = (user?.profileId?._id || user?.profileId || user?.profile?._id || '').toString();
+    const teacherEmail = (user?.email || '').toLowerCase().trim();
+
+    const teacherStatusObj = metrics.classAttendanceStatus?.find((cls) => {
+      const tId = (cls.classTeacherId?._id || cls.classTeacherId || '').toString();
+      const tEmail = (cls.classTeacherEmail || '').toLowerCase().trim();
+      return (
+        (teacherProfileId && tId === teacherProfileId) ||
+        (teacherEmail && tEmail === teacherEmail) ||
+        (teacherAssignedSection && cls.classId === teacherAssignedSection.classId && cls.sectionId === teacherAssignedSection.sectionId)
+      );
+    });
+
+    const isTeacherAttendancePending = teacherStatusObj ? !teacherStatusObj.isTaken : false;
+
     return (
       <div className="space-y-6">
+        {/* Urgent Attendance Warning Banner for Teacher */}
+        {isTeacherAttendancePending && (
+          <div className="bg-gradient-to-r from-rose-900 via-rose-950 to-slate-900 border border-rose-500/50 rounded-2xl p-4 text-white flex items-center justify-between shadow-xl animate-pulse">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-rose-500/20 text-rose-300 rounded-xl border border-rose-400/30">
+                <AlertCircle className="w-6 h-6 text-rose-400" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-sm uppercase tracking-wide text-rose-200">
+                  ⚠️ Urgent Attendance Warning from Principal
+                </h3>
+                <p className="text-xs text-rose-300 mt-0.5">
+                  Daily attendance for your assigned class ({assignedText}) has not been taken today. Please mark attendance immediately.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/attendance')}
+              className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl text-xs shadow-md transition-all shrink-0 cursor-pointer"
+            >
+              Mark Attendance Now
+            </button>
+          </div>
+        )}
         <div className="bg-gradient-to-r from-sky-900 via-slate-900 to-indigo-950 rounded-3xl p-6 text-white shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <span className="inline-block px-3 py-1 bg-sky-500/20 border border-sky-400/30 rounded-full text-sky-300 text-xs font-semibold uppercase tracking-wider mb-2">
@@ -1056,16 +1129,152 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard title="Total Students" value={metrics.totalStudents} subtext="Enrolled Students" icon={GraduationCap} color="indigo" />
         <StatCard title="Active Teachers" value={metrics.totalTeachers} subtext="Assigned Faculty" icon={UserCheck} color="sky" />
-        <StatCard title="Today's Attendance" value={`${metrics.todayAttendancePercentage}%`} subtext="Presence Rate" icon={CalendarCheck} color="emerald" />
-        <StatCard title="Fee Collection" value={`$${metrics.totalCollectedFees.toLocaleString()}`} subtext={`Pending: $${metrics.totalPendingFees.toLocaleString()}`} icon={DollarSign} color="amber" />
+        <StatCard
+          title="Today's Attendance"
+          value={`${metrics.todayAttendancePercentage}%`}
+          subtext={`${metrics.markedSectionsCount || 0} / ${metrics.totalSectionsCount || 0} Classes Submitted`}
+          icon={CalendarCheck}
+          color="emerald"
+        />
+        <StatCard
+          title="Fee Collection"
+          value={`₹${(metrics.totalCollectedFees || 0).toLocaleString()}`}
+          subtext={`Pending: ₹${(metrics.totalPendingFees || 0).toLocaleString()}`}
+          icon={DollarSign}
+          color="amber"
+        />
       </div>
+
+      {/* TODAY'S CLASS-BY-CLASS ATTENDANCE STATUS TRACKER FOR PRINCIPAL (AUTOMATICALLY REMOVED WHEN ALL CLASSES HAVE TAKEN ATTENDANCE) */}
+      {(metrics.totalSectionsCount - metrics.markedSectionsCount) > 0 && (
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div>
+              <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
+                <CalendarCheck className="w-5 h-5 text-indigo-600" />
+                <span>Today's Class Attendance Status Tracker</span>
+              </h3>
+              <p className="text-xs text-slate-400 font-medium">
+                Monitor which classes have submitted daily attendance and send warning alerts for pending classes.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 bg-emerald-50 text-emerald-700 font-bold rounded-xl text-xs border border-emerald-200">
+                {metrics.markedSectionsCount || 0} / {metrics.totalSectionsCount || 0} Taken
+              </span>
+              {(metrics.totalSectionsCount - metrics.markedSectionsCount) > 0 && (
+                <span className="px-3 py-1 bg-rose-50 text-rose-700 font-bold rounded-xl text-xs border border-rose-200">
+                  {(metrics.totalSectionsCount - metrics.markedSectionsCount)} Pending
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50 text-slate-400 font-black uppercase text-[10px] tracking-wider border-b border-slate-200">
+                <tr>
+                  <th className="py-3 px-4">Class & Section</th>
+                  <th className="py-3 px-4">Class Teacher</th>
+                  <th className="py-3 px-4">Enrolled Students</th>
+                  <th className="py-3 px-4">Status Today</th>
+                  <th className="py-3 px-4">Presence Breakdown</th>
+                  <th className="py-3 px-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-semibold">
+                {metrics.classAttendanceStatus && metrics.classAttendanceStatus.length > 0 ? (
+                  metrics.classAttendanceStatus.map((clsItem, idx) => {
+                    const itemKey = `${clsItem.classId}_${clsItem.sectionId}`;
+                    const isWarned = warnedClasses[itemKey];
+                    const isSending = sendingWarningKey === itemKey;
+
+                    return (
+                      <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-3.5 px-4 font-black text-slate-900 text-sm">
+                          {clsItem.fullClassName || `${clsItem.className} - ${clsItem.sectionName}`}
+                        </td>
+                        <td className="py-3.5 px-4 font-extrabold text-slate-700">
+                          {clsItem.classTeacherName || 'Unassigned'}
+                        </td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-600">
+                          {clsItem.totalStudents} Students
+                        </td>
+                        <td className="py-3.5 px-4">
+                          {clsItem.isTaken ? (
+                            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 inline-flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" /> Attendance Taken
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 inline-flex items-center gap-1">
+                              <AlertCircle className="w-3 h-3 text-rose-600" /> Pending (Not Taken)
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          {clsItem.isTaken ? (
+                            <div className="flex items-center gap-2 text-[11px]">
+                              <span className="text-emerald-700 font-extrabold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                {clsItem.presentCount} Present
+                              </span>
+                              <span className="text-rose-700 font-extrabold bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                                {clsItem.absentCount} Absent
+                              </span>
+                              {clsItem.leaveCount > 0 && (
+                                <span className="text-amber-700 font-extrabold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                                  {clsItem.leaveCount} Leave
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 font-medium text-[11px]">0 / {clsItem.totalStudents} Marked</span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          {clsItem.isTaken ? (
+                            <button
+                              onClick={() => navigate('/admin/attendance')}
+                              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer"
+                            >
+                              View Sheet
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleSendAttendanceWarning(clsItem)}
+                              disabled={isWarned || isSending}
+                              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
+                                isWarned
+                                  ? 'bg-amber-100 text-amber-800 border border-amber-300 font-extrabold cursor-default'
+                                  : 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white shadow-md shadow-rose-600/20'
+                              }`}
+                            >
+                              <AlertCircle className="w-3.5 h-3.5" />
+                              {isSending ? 'Sending Warning...' : isWarned ? 'Warning Sent ✓' : 'Send Warning'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-slate-400">
+                      Loading class attendance status...
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-bold text-slate-800">Weekly Attendance Rate</h3>
-              <p className="text-xs text-slate-400">Class 7 - 10 presence percentage</p>
+              <p className="text-xs text-slate-400 font-medium">Daily presence percentage across all classes</p>
             </div>
             <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100 flex items-center gap-1">
               <TrendingUp className="w-3.5 h-3.5" /> Live Metrics
@@ -1076,7 +1285,7 @@ export default function Dashboard() {
               <BarChart data={attendanceChartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                 <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 12 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 12 }} domain={[80, 100]} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 12 }} domain={[0, 100]} />
                 <Tooltip cursor={{ fill: '#F8FAFC' }} />
                 <Bar dataKey="attendance" fill="#4F46E5" radius={[8, 8, 0, 0]} barSize={36} />
               </BarChart>
@@ -1103,10 +1312,10 @@ export default function Dashboard() {
           </div>
           <div className="grid grid-cols-2 gap-2 text-center text-xs font-semibold">
             <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100">
-              Collected: ${metrics.totalCollectedFees.toLocaleString()}
+              Collected: ₹{(metrics.totalCollectedFees || 0).toLocaleString()}
             </div>
             <div className="p-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-100">
-              Pending: ${metrics.totalPendingFees.toLocaleString()}
+              Pending: ₹{(metrics.totalPendingFees || 0).toLocaleString()}
             </div>
           </div>
         </div>

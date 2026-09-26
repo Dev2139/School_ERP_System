@@ -160,7 +160,7 @@ export default function App() {
         <Route
           path="admin/admissions"
           element={
-            <RoleRoute roles={['admin']}>
+            <RoleRoute roles={['admin', 'accountant']}>
               <AdmissionManager />
             </RoleRoute>
           }
@@ -455,6 +455,14 @@ export default function App() {
           element={
             <RoleRoute roles={['accountant']}>
               <FeeManager />
+            </RoleRoute>
+          }
+        />
+        <Route
+          path="accountant/admissions"
+          element={
+            <RoleRoute roles={['accountant', 'admin']}>
+              <AdmissionManager />
             </RoleRoute>
           }
         />
