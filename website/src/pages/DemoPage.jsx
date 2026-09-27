@@ -233,9 +233,12 @@ export default function DemoPage() {
             </div>
 
             <div className="p-6 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 space-y-2 text-xs font-medium">
-              <div className="font-bold text-sm">Prefer Direct Contact?</div>
-              <div>Email: <a href="mailto:demo@scholargrid.com" className="font-bold underline">demo@scholargrid.com</a></div>
-              <div>Phone: <a href="tel:+916354236105" className="font-bold underline">+91 6354236105</a></div>
+              <div className="font-bold text-sm">Direct Developer & Support Contact</div>
+              <div className="text-slate-700"><strong>Devdhara Technologies Pvt. Ltd.</strong></div>
+              <div>HQ: Naroda, Ahmedabad, Gujarat</div>
+              <div>Email: <a href="mailto:info@devdhar.in" className="font-bold text-blue-700 underline">info@devdhar.in</a></div>
+              <div>Phone: <a href="tel:+916354236105" className="font-bold text-blue-700 font-mono">+91 6354236105</a> • <a href="tel:+919558787386" className="font-bold text-blue-700 font-mono">+91 9558787386</a></div>
+              <div>Website: <a href="https://devdhar.in" target="_blank" rel="noopener noreferrer" className="font-bold text-blue-700 underline font-mono">devdhar.in</a></div>
             </div>
           </div>
 

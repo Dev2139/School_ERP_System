@@ -9,7 +9,12 @@ import {
   Sparkles,
   TrendingUp,
   Heart,
-  Target
+  Target,
+  Globe,
+  Mail,
+  Phone,
+  MapPin,
+  ExternalLink
 } from 'lucide-react';
 import ScholarGridLogo from '../components/ScholarGridLogo';
 
@@ -28,14 +33,14 @@ export default function AboutPage({ onOpenDemoModal }) {
       <section className="pt-28 pb-16 bg-gradient-to-b from-blue-50/60 via-slate-50 to-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
           <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 bg-blue-100/80 px-3.5 py-1.5 rounded-full border border-blue-200">
-            Our Mission & Vision
+            Our Mission & Parent Organization
           </span>
           <h1 className="text-4xl sm:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight">
             Simplifying School Administration. <br />
             <span className="text-gradient-blue">Empowering Educators.</span>
           </h1>
           <p className="text-base sm:text-lg text-slate-600 max-w-3xl mx-auto font-medium leading-relaxed">
-            ScholarGrid ERP was created to eliminate administrative friction in educational institutions so teachers and administrators can focus on what matters most — student growth and academic excellence.
+            ScholarGrid ERP is developed by <strong>Devdhara Technologies Pvt. Ltd.</strong> to eliminate administrative friction in educational institutions so teachers and administrators can focus on student excellence.
           </p>
         </div>
       </section>
@@ -106,6 +111,62 @@ export default function AboutPage({ onOpenDemoModal }) {
               <div className="flex items-center gap-2 text-slate-200 font-semibold">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span>Granular 7-role access control (RBAC) & system audit logs</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Parent Company Spotlight Section */}
+        <div className="p-8 sm:p-10 rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 shadow-md space-y-6">
+          <div className="space-y-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-100 px-3 py-1 rounded-full border border-blue-200">
+              Parent Company & Engineering Center
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+              Devdhara Technologies Pvt. Ltd.
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 font-medium max-w-2xl leading-relaxed">
+              ScholarGrid ERP is owned and engineered by Devdhara Technologies Pvt. Ltd., headquartered in Naroda, Ahmedabad, Gujarat. Devdhara Technologies builds high-performance enterprise SaaS, mobile apps, and educational software platforms.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-semibold text-slate-800">
+            <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
+              <div className="flex items-center gap-2 text-blue-600 font-bold">
+                <MapPin className="w-4 h-4" />
+                <span>Headquarters</span>
+              </div>
+              <div className="text-slate-600 text-[11px]">Naroda, Ahmedabad, Gujarat, India</div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
+              <div className="flex items-center gap-2 text-emerald-600 font-bold">
+                <Globe className="w-4 h-4" />
+                <span>Official Website</span>
+              </div>
+              <a href="https://devdhar.in" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-[11px] inline-flex items-center gap-1 font-mono font-bold">
+                devdhar.in <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
+              <div className="flex items-center gap-2 text-sky-600 font-bold">
+                <Mail className="w-4 h-4" />
+                <span>Corporate Email</span>
+              </div>
+              <a href="mailto:info@devdhar.in" className="text-slate-700 hover:text-blue-600 text-[11px] font-mono font-bold">
+                info@devdhar.in
+              </a>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
+              <div className="flex items-center gap-2 text-indigo-600 font-bold">
+                <Phone className="w-4 h-4" />
+                <span>Phone Lines</span>
+              </div>
+              <div className="text-slate-700 text-[11px] font-mono font-bold">
+                +91 6354236105 <br />
+                +91 9558787386
               </div>
             </div>
           </div>

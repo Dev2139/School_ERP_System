@@ -87,7 +87,7 @@ export default function HomePage({ onOpenDemoModal }) {
       {/* ------------------------------------------------------------------- */}
       {/* 1. HERO SECTION WITH SAAS DASHBOARD & REAL SCHOOL CAMPUS */}
       {/* ------------------------------------------------------------------- */}
-      <section className="relative pt-24 pb-20 md:pt-32 md:pb-28 border-b border-slate-200/70 hero-glow bg-gradient-to-b from-blue-50/50 via-slate-50/50 to-white">
+      <section className="relative pt-24 pb-20 md:pt-32 md:pb-28 border-b border-slate-200/70 hero-glow bg-grid-dots bg-gradient-to-b from-blue-50/60 via-slate-50/40 to-white overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
           
           {/* Announcement Badge */}

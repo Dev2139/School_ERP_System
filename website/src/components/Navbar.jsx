@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, ArrowRight, Sparkles, ChevronDown } from 'lucide-react';
+import { Menu, X, ArrowRight, Sparkles } from 'lucide-react';
 import ScholarGridLogo from './ScholarGridLogo';
 
 export default function Navbar({ onOpenDemoModal }) {
@@ -35,8 +35,8 @@ export default function Navbar({ onOpenDemoModal }) {
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
       scrolled 
-        ? 'bg-white/95 backdrop-blur-xl border-b border-slate-200/80 shadow-xs py-3' 
-        : 'bg-white/90 backdrop-blur-md border-b border-slate-100 py-4'
+        ? 'bg-white/90 backdrop-blur-xl border-b border-slate-200/80 shadow-xs py-3' 
+        : 'bg-white/80 backdrop-blur-md border-b border-slate-100 py-3.5'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
@@ -44,17 +44,17 @@ export default function Navbar({ onOpenDemoModal }) {
           {/* ScholarGrid ERP Brand Logo */}
           <ScholarGridLogo />
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-600">
+          {/* Glass Navigation Pill Container */}
+          <nav className="hidden lg:flex items-center gap-1.5 p-1 bg-slate-100/70 border border-slate-200/60 rounded-full text-xs font-semibold text-slate-600 shadow-2xs">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
                 className={({ isActive }) =>
-                  `transition-all py-1 relative hover:text-blue-600 ${
+                  `px-3.5 py-1.5 rounded-full transition-all duration-200 ${
                     isActive
-                      ? 'text-blue-600 font-extrabold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-blue-600 after:rounded-full'
-                      : ''
+                      ? 'bg-white text-blue-600 font-extrabold shadow-2xs border border-slate-200/80'
+                      : 'hover:text-slate-900 hover:bg-white/60'
                   }`
                 }
               >
@@ -67,7 +67,7 @@ export default function Navbar({ onOpenDemoModal }) {
           <div className="hidden sm:flex items-center gap-3">
             <button
               onClick={handleDemoClick}
-              className="px-5 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-md shadow-blue-500/15 hover:shadow-lg hover:shadow-blue-500/25 active:scale-[0.98] transition-all cursor-pointer flex items-center gap-2"
+              className="px-5 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-full shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 active:scale-[0.98] transition-all cursor-pointer flex items-center gap-2"
             >
               <span>Book a Demo</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -78,7 +78,7 @@ export default function Navbar({ onOpenDemoModal }) {
           <div className="lg:hidden flex items-center gap-2">
             <button
               onClick={handleDemoClick}
-              className="sm:hidden px-3 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-lg"
+              className="sm:hidden px-3.5 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-full shadow-xs"
             >
               Demo
             </button>
@@ -96,7 +96,7 @@ export default function Navbar({ onOpenDemoModal }) {
 
         {/* Mobile Navigation Drawer */}
         {mobileMenuOpen && (
-          <div className="lg:hidden mt-3 p-4 bg-white border border-slate-200/90 rounded-2xl shadow-2xl space-y-2 text-left animate-fadeIn">
+          <div className="lg:hidden mt-3 p-4 bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-2xl shadow-2xl space-y-2 text-left animate-fadeIn">
             <div className="grid grid-cols-2 gap-1.5">
               {navItems.map((item) => (
                 <NavLink
@@ -105,7 +105,7 @@ export default function Navbar({ onOpenDemoModal }) {
                   onClick={() => setMobileMenuOpen(false)}
                   className={({ isActive }) =>
                     `px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                      isActive ? 'bg-blue-50 text-blue-700 font-extrabold' : 'text-slate-700 hover:bg-slate-50'
+                      isActive ? 'bg-blue-50 text-blue-700 font-extrabold border border-blue-100' : 'text-slate-700 hover:bg-slate-50'
                     }`
                   }
                 >

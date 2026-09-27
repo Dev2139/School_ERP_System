@@ -57,7 +57,7 @@ export default function DashboardPreview({ showFloatingBadges = true }) {
       )}
 
       {/* Main SaaS Dashboard Visual Mockup Frame */}
-      <div className="rounded-2xl bg-slate-900 p-2 sm:p-3 shadow-2xl border border-slate-800 text-left font-['Plus_Jakarta_Sans'] overflow-hidden">
+      <div className="rounded-2xl bg-slate-900 p-2 sm:p-3 shadow-mockup glow-shadow-blue border border-slate-800/90 text-left font-['Plus_Jakarta_Sans'] overflow-hidden relative">
         
         {/* Browser / Application Top Bar */}
         <div className="bg-slate-900 text-white px-4 py-2.5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
