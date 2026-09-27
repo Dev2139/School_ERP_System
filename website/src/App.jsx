@@ -6,11 +6,15 @@ import Footer from './components/Footer';
 import DemoModal from './components/DemoModal';
 
 import HomePage from './pages/HomePage';
-import AboutErpPage from './pages/AboutErpPage';
-import ModulesPage from './pages/ModulesPage';
-import WhyUsPage from './pages/WhyUsPage';
-import AboutDevdharaPage from './pages/AboutDevdharaPage';
-import ContactPage from './pages/ContactPage';
+import PlatformPage from './pages/PlatformPage';
+import FeaturesPage from './pages/FeaturesPage';
+import RolesPage from './pages/RolesPage';
+import SolutionsPage from './pages/SolutionsPage';
+import SecurityPage from './pages/SecurityPage';
+import MultiSchoolPage from './pages/MultiSchoolPage';
+import PricingPage from './pages/PricingPage';
+import DemoPage from './pages/DemoPage';
+import AboutPage from './pages/AboutPage';
 
 export default function App() {
   const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
@@ -21,38 +25,42 @@ export default function App() {
   return (
     <Router>
       <ScrollToTop />
-      <div className="min-h-screen bg-slate-50 text-slate-900 font-['Inter',sans-serif] flex flex-col justify-between selection:bg-blue-600 selection:text-white">
+      <div className="min-h-screen bg-white text-slate-900 font-['Plus_Jakarta_Sans',sans-serif] flex flex-col justify-between selection:bg-blue-600 selection:text-white antialiased">
         
-        {/* Clean Sticky Navigation Bar */}
+        {/* Sticky Navigation Bar */}
         <Navbar onOpenDemoModal={handleOpenDemoModal} />
 
-        {/* Multi-Page Routes */}
-        <main className="grow pt-20">
+        {/* Core Multi-Page Routes */}
+        <main className="grow">
           <Routes>
             <Route path="/" element={<HomePage onOpenDemoModal={handleOpenDemoModal} />} />
-            <Route path="/about-erp" element={<AboutErpPage onOpenDemoModal={handleOpenDemoModal} />} />
-            <Route path="/modules" element={<ModulesPage onOpenDemoModal={handleOpenDemoModal} />} />
-            <Route path="/why-us" element={<WhyUsPage onOpenDemoModal={handleOpenDemoModal} />} />
-            <Route path="/about-devdhara" element={<AboutDevdharaPage onOpenDemoModal={handleOpenDemoModal} />} />
-            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/platform" element={<PlatformPage onOpenDemoModal={handleOpenDemoModal} />} />
+            <Route path="/features" element={<FeaturesPage onOpenDemoModal={handleOpenDemoModal} />} />
+            <Route path="/roles" element={<RolesPage onOpenDemoModal={handleOpenDemoModal} />} />
+            <Route path="/solutions" element={<SolutionsPage onOpenDemoModal={handleOpenDemoModal} />} />
+            <Route path="/security" element={<SecurityPage onOpenDemoModal={handleOpenDemoModal} />} />
+            <Route path="/multi-school" element={<MultiSchoolPage onOpenDemoModal={handleOpenDemoModal} />} />
+            <Route path="/pricing" element={<PricingPage onOpenDemoModal={handleOpenDemoModal} />} />
+            <Route path="/demo" element={<DemoPage />} />
+            <Route path="/about" element={<AboutPage onOpenDemoModal={handleOpenDemoModal} />} />
 
-            {/* Aliases / Fallbacks */}
-            <Route path="/about" element={<Navigate to="/about-erp" replace />} />
-            <Route path="/features" element={<Navigate to="/modules" replace />} />
-            <Route path="/pricing" element={<Navigate to="/why-us" replace />} />
-            <Route path="/demo" element={<Navigate to="/contact" replace />} />
+            {/* Legacy Path Redirections & Aliases */}
+            <Route path="/about-erp" element={<Navigate to="/about" replace />} />
+            <Route path="/modules" element={<Navigate to="/platform" replace />} />
+            <Route path="/why-us" element={<Navigate to="/solutions" replace />} />
+            <Route path="/about-devdhara" element={<Navigate to="/about" replace />} />
+            <Route path="/contact" element={<Navigate to="/demo" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
 
-        {/* Enterprise Footer */}
+        {/* Multi-Column Enterprise Footer */}
         <Footer />
 
-        {/* Request Demo Modal */}
+        {/* Global Request Demo Modal */}
         <DemoModal isOpen={isDemoModalOpen} onClose={handleCloseDemoModal} />
 
       </div>
     </Router>
   );
 }
-

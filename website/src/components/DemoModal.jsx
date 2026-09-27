@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CheckCircle2, ShieldCheck, ArrowRight, Building, Mail, Phone, User, Users } from 'lucide-react';
+import { X, CheckCircle2, ShieldCheck, ArrowRight, Building, Mail, Phone, User, Sparkles } from 'lucide-react';
 
 export default function DemoModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({
@@ -7,8 +7,9 @@ export default function DemoModal({ isOpen, onClose }) {
     school: '',
     email: '',
     phone: '',
-    role: 'Principal',
+    role: 'Principal / School Admin',
     students: '300-1000',
+    campuses: '1 Campus',
     message: ''
   });
 
@@ -23,32 +24,33 @@ export default function DemoModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-fadeIn text-left">
-      <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto">
         
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-700 bg-slate-100 rounded-full transition-colors cursor-pointer"
+          className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-700 bg-slate-100 rounded-full transition-colors cursor-pointer z-10"
         >
           <X className="w-5 h-5" />
         </button>
 
         {!submitted ? (
           <div className="space-y-5">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">
-                Greenwood ERP Showcase
+            <div className="space-y-1 pr-6">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200 inline-flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-blue-600" />
+                <span>ScholarGrid ERP Demonstration</span>
               </span>
-              <h3 className="text-2xl font-black text-slate-900">Request a Product Demo</h3>
+              <h3 className="text-2xl font-black text-slate-900">See ScholarGrid ERP in Action</h3>
               <p className="text-xs text-slate-600">
-                Schedule a walk-through with our ed-tech specialists at Devdhara Technologies.
+                Book a personalized walk-through with our SaaS ed-tech specialists.
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
               
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Your Name *</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Full Name *</label>
                 <input
                   type="text"
                   required
@@ -61,11 +63,11 @@ export default function DemoModal({ isOpen, onClose }) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">School / Institution *</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">School / Organization *</label>
                   <input
                     type="text"
                     required
-                    placeholder="Greenwood Public School"
+                    placeholder="ScholarGrid Academy"
                     value={formData.school}
                     onChange={(e) => setFormData({ ...formData, school: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
@@ -79,11 +81,12 @@ export default function DemoModal({ isOpen, onClose }) {
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   >
-                    <option value="Principal">Principal / Director</option>
-                    <option value="Trustee">Trustee / Owner</option>
-                    <option value="Administrator">School Administrator</option>
-                    <option value="Accountant">Head Accountant</option>
-                    <option value="Teacher">Senior Teacher</option>
+                    <option value="Principal / School Admin">Principal / School Admin</option>
+                    <option value="Trustee / School Owner">Trustee / School Owner</option>
+                    <option value="Head Accountant">Head Accountant</option>
+                    <option value="IT Director">IT Director</option>
+                    <option value="Senior Teacher">Senior Teacher</option>
+                    <option value="Receptionist / Admissions">Receptionist / Admissions</option>
                   </select>
                 </div>
               </div>
@@ -114,56 +117,83 @@ export default function DemoModal({ isOpen, onClose }) {
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Number of Students</label>
+                  <select
+                    value={formData.students}
+                    onChange={(e) => setFormData({ ...formData, students: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  >
+                    <option value="<300">Under 300 Students</option>
+                    <option value="300-1000">300 – 1,000 Students</option>
+                    <option value="1000-3000">1,000 – 3,000 Students</option>
+                    <option value="3000+">3,000+ Students (Enterprise)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Number of Campuses</label>
+                  <select
+                    value={formData.campuses}
+                    onChange={(e) => setFormData({ ...formData, campuses: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  >
+                    <option value="1 Campus">1 Campus</option>
+                    <option value="2-5 Campuses">2 – 5 Campuses</option>
+                    <option value="5+ Campuses">5+ Campuses (Multi-School)</option>
+                  </select>
+                </div>
+              </div>
+
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Student Strength</label>
-                <select
-                  value={formData.students}
-                  onChange={(e) => setFormData({ ...formData, students: e.target.value })}
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Message / Requirements</label>
+                <textarea
+                  rows="2"
+                  placeholder="Tell us about your school's current setup or specific module needs..."
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600"
-                >
-                  <option value="<300">Under 300 Students</option>
-                  <option value="300-1000">300 – 1,000 Students</option>
-                  <option value="1000+">1,000+ Students (Group / Multi-branch)</option>
-                </select>
+                ></textarea>
               </div>
 
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="w-full py-3 bg-slate-900 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>Submit Demo Request</span>
+                  <span>Request a Demo</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
 
               <div className="text-[11px] text-slate-400 text-center flex items-center justify-center gap-1 pt-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Devdhara Technologies • devdhar.in</span>
+                <span>ScholarGrid ERP • Your data is 100% private and protected</span>
               </div>
 
             </form>
           </div>
         ) : (
           <div className="py-8 text-center space-y-4">
-            <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-7 h-7" />
+            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-md">
+              <CheckCircle2 className="w-8 h-8" />
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-xl font-black text-slate-900">Demo Request Submitted!</h3>
-              <p className="text-xs text-slate-600 max-w-sm mx-auto">
-                Thank you, <strong>{formData.name}</strong>. Our team for <strong>{formData.school}</strong> will schedule your demonstration shortly.
+              <h3 className="text-2xl font-black text-slate-900">Demo Request Submitted!</h3>
+              <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
+                Thank you, <strong>{formData.name}</strong>. Our school software specialists have received your request for <strong>{formData.school}</strong> and will contact you within 24 hours.
               </p>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-4">
               <button
                 onClick={() => {
                   setSubmitted(false);
                   onClose();
                 }}
-                className="px-6 py-2 bg-slate-900 text-white font-bold text-xs rounded-lg cursor-pointer"
+                className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer transition-all"
               >
                 Close & Return
               </button>
