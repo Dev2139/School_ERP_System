@@ -146,7 +146,9 @@ exports.updateStatus = async (req, res, next) => {
         await Parent.findByIdAndUpdate(parentDoc._id, { $addToSet: { children: studentDoc._id } });
 
         // Create User account for Student login
-        const username = `${admission.studentFirstName.toLowerCase()}${admission.studentLastName.toLowerCase()}${Math.floor(10 + Math.random() * 90)}`;
+        const { generateStudentUID } = require('../utils/uidGenerator');
+        const studentUid = await generateStudentUID(admission.schoolId, admission.dob);
+        const username = studentUid;
         const hashedPassword = await bcrypt.hash('06102006', 10);
 
         let userDoc = await User.findOne({ email: studentEmail });
@@ -162,7 +164,12 @@ exports.updateStatus = async (req, res, next) => {
             status: 'active',
             mustChangePassword: false,
           });
+        } else {
+          userDoc.username = username;
+          await userDoc.save();
         }
+
+        studentDoc.studentId = studentUid;
 
         studentDoc.userId = userDoc._id;
         await studentDoc.save();

@@ -8,19 +8,27 @@ const { logAudit } = require('../middleware/auditMiddleware');
 
 exports.login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide email and password' });
+    const { username, email, uid, password } = req.body;
+    const identifier = (username || uid || email || '').trim();
+    if (!identifier || !password) {
+      return res.status(400).json({ success: false, message: 'Please provide UID/Username and password' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    const escapedIdentifier = identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const user = await User.findOne({
+      $or: [
+        { username: new RegExp(`^${escapedIdentifier}$`, 'i') },
+        { email: identifier.toLowerCase() },
+      ],
+    });
+
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+      return res.status(401).json({ success: false, message: 'Invalid UID or password' });
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+      return res.status(401).json({ success: false, message: 'Invalid UID or password' });
     }
 
     if (user.status !== 'active') {

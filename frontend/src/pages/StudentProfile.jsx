@@ -220,6 +220,10 @@ export default function StudentProfile() {
               </h3>
               <div className="space-y-3 text-xs text-slate-600 font-medium">
                 <div>
+                  <strong className="text-slate-400 uppercase text-[10px] block font-bold">UID (Login Username):</strong>
+                  <span className="font-black text-emerald-600 text-sm bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-block mt-0.5">{student.studentId || student.admissionNumber}</span>
+                </div>
+                <div>
                   <strong className="text-slate-400 uppercase text-[10px] block font-bold">Email Address:</strong>
                   <span className="font-extrabold text-indigo-600 text-sm">{student.email || 'student@school.com'}</span>
                 </div>

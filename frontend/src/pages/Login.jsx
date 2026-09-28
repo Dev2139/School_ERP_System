@@ -5,8 +5,8 @@ import { useNotification } from '../context/NotificationContext';
 import { ShieldCheck, LogIn, Sparkles, GraduationCap, Briefcase } from 'lucide-react';
 
 export default function Login() {
-  const [email, setEmail] = useState('principal@school.com');
-  const [password, setPassword] = useState('06102006');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [activeCategory, setActiveCategory] = useState('staff'); // 'staff' | 'student'
   const [loading, setLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -50,18 +50,18 @@ export default function Login() {
   const handleCategorySelect = (category) => {
     setActiveCategory(category);
     if (category === 'staff') {
-      setEmail('principal@school.com');
-      setPassword('06102006');
+      setUsername('');
+      setPassword('');
     } else {
-      setEmail('student@school.com');
-      setPassword('06102006');
+      setUsername('');
+      setPassword('');
     }
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const res = await login(email, password);
+    const res = await login(username, password);
     setLoading(false);
 
     if (res?.success) {
@@ -77,7 +77,7 @@ export default function Login() {
           : `/student/${profileId}`;
       navigate(`${rolePrefix}/dashboard`);
     } else {
-      addToast(res?.message || 'Login failed. Check credentials.', 'error');
+      addToast(res?.message || 'Login failed. Check UID and password.', 'error');
     }
   };
 
@@ -87,7 +87,7 @@ export default function Login() {
       {/* SIDE 1: 25% BREADTH LOGIN SYSTEM FORM */}
       {/* ------------------------------------------------------------------- */}
       <div className="w-full lg:w-[28%] xl:w-[25%] p-6 sm:p-8 flex flex-col justify-between bg-slate-900 border-r border-slate-800 shrink-0 z-20 shadow-2xl relative">
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Header Branding */}
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 bg-gradient-to-tr from-indigo-600 to-sky-400 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-500/30">
@@ -101,12 +101,12 @@ export default function Login() {
 
           {/* Title Prompt */}
           <div>
-            <h2 className="text-lg font-bold text-slate-100">Sign in to your account</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Select role portal to access dashboard</p>
+            <h2 className="text-lg font-bold text-slate-100">Sign in with UID</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Enter auto-generated UID to access portal</p>
           </div>
 
           {/* 2 MAIN ROLES: STAFF & STUDENT */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
               Select User Role
             </label>
@@ -140,16 +140,17 @@ export default function Login() {
           </div>
 
           {/* Login Form Inputs */}
-          <form onSubmit={handleLogin} className="space-y-4 pt-1">
+          <form onSubmit={handleLogin} className="space-y-3.5 pt-1">
             <div>
               <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                Email Address
+                UID (Username)
               </label>
               <input
-                type="email"
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="e.g. 26JNVGSTAFF008 or 26JNVG006"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-semibold transition-all"
               />
             </div>

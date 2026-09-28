@@ -17,8 +17,12 @@ exports.createStaff = async (req, res, next) => {
     const data = req.body;
     data.schoolId = req.user.schoolId;
 
+    const { generateTeacherUID } = require('../utils/uidGenerator');
+    const staffUid = await generateTeacherUID(req.user.schoolId, data.joiningDate || data.dob);
+
     const initialPassword = formatDOBToPassword(data.dob || '1990-01-01');
-    const username = data.name.toLowerCase().replace(/\s+/g, '') + Math.floor(100 + Math.random() * 900);
+    const username = staffUid;
+    data.employeeId = data.employeeId || staffUid;
 
     // Create User Account
     const user = await User.create({

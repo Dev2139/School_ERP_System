@@ -278,14 +278,17 @@ exports.createStudent = async (req, res, next) => {
     data.gender = data.gender || 'male';
     data.dob = data.dob || '2013-01-01';
 
-    // 5. Unique numbers
-    data.admissionNumber = data.admissionNumber || `ADM-${Date.now().toString().slice(-4)}${Math.floor(10 + Math.random() * 90)}`;
-    data.studentId = data.studentId || `STU-${Math.floor(1000 + Math.random() * 9000)}`;
+    // 5. Unique numbers and auto-generated UID
+    const { generateStudentUID } = require('../utils/uidGenerator');
+    const studentUid = await generateStudentUID(data.schoolId, data.dob || data.admissionDate);
+    
+    data.admissionNumber = data.admissionNumber || studentUid;
+    data.studentId = data.studentId || studentUid;
     data.rollNumber = data.rollNumber || Math.floor(1 + Math.random() * 50);
 
     const initialPassword = data.password || 'Student@123';
-    const emailStr = (data.email || `student.${Date.now().toString().slice(-4)}@school.com`).toLowerCase().trim();
-    const username = (data.firstName + data.lastName).toLowerCase().replace(/\s+/g, '') + Math.floor(100 + Math.random() * 900);
+    const emailStr = (data.email || `student.${studentUid.toLowerCase()}@school.com`).toLowerCase().trim();
+    const username = studentUid;
 
     // Create or find User
     let user = await User.findOne({ email: emailStr });
@@ -298,6 +301,9 @@ exports.createStudent = async (req, res, next) => {
         role: 'student',
         mustChangePassword: false,
       });
+    } else {
+      user.username = username;
+      await user.save();
     }
 
     data.email = emailStr;

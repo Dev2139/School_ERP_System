@@ -90,12 +90,16 @@ exports.createTeacher = async (req, res, next) => {
     }
 
     const { formatDOBToPassword } = require('../utils/passwordHelper');
+    const { generateTeacherUID } = require('../utils/uidGenerator');
     const TeacherAssignment = require('../models/TeacherAssignment');
+
+    const teacherUid = await generateTeacherUID(req.user.schoolId, data.joiningDate || data.dob);
+    data.employeeId = data.employeeId || teacherUid;
     const initialPassword = formatDOBToPassword(data.dob || '1990-01-01');
 
     const user = await User.create({
       schoolId: req.user.schoolId,
-      username: data.name.toLowerCase().replace(/\s+/g, '') + Math.floor(100 + Math.random() * 900),
+      username: teacherUid,
       email: data.email.toLowerCase().trim(),
       password: initialPassword,
       role: 'teacher',
